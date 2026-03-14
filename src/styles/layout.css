@@ -1,0 +1,204 @@
+.app-container {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  height: calc(100vh - 64px);
+  background: var(--bg-dark);
+}
+
+/* SIDEBAR */
+.sidebar {
+  border-right: 1px solid var(--border-color);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background: linear-gradient(180deg, #0f0f13 0%, #09090b 100%);
+  overflow-y: auto;
+}
+
+/* WORKSPACE */
+.workspace {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0d0d10;
+}
+
+.workspace-header {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(18, 18, 23, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+/* TABS */
+.tabs {
+  display: flex;
+  background: #1c1c24;
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.tabs button {
+  padding: 8px 20px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tabs button.active {
+  background: var(--accent-purple);
+  color: white;
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+/* PROMPT PANEL */
+.prompt-panel h3 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.prompt-panel textarea {
+  width: 100%;
+  height: 220px;
+  background: #1c1c24;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  color: white;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: none;
+  transition: border-color 0.2s;
+}
+
+.prompt-panel textarea:focus {
+  outline: none;
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.generate-btn {
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  background: var(--accent-purple);
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.generate-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.generate-btn:active {
+  transform: translateY(1px);
+}
+
+/* TEMPLATES */
+.template-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.template-buttons button {
+  padding: 10px;
+  border-radius: 8px;
+  background: #1c1c24;
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+}
+
+.template-buttons button:hover {
+  border-color: var(--accent-purple);
+  background: #252530;
+}
+
+/* PREVIEW FRAME */
+.preview-container {
+  padding: 24px;
+  height: 100%;
+  overflow: auto;
+  background-image: radial-gradient(#1c1c24 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.preview-window {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+
+/* Animation for the Code Editor loading line */
+.loader-line {
+  width: 200px;
+  height: 2px;
+  background: rgba(139, 92, 246, 0.2);
+  position: relative;
+  overflow: hidden;
+  border-radius: 2px;
+}
+
+.loader-line::after {
+  content: "";
+  position: absolute;
+  left: -50%;
+  height: 2px;
+  width: 50%;
+  background: var(--accent-purple);
+  animation: loading-bar 1.5s infinite linear;
+}
+
+@keyframes loading-bar {
+  0% { left: -50%; }
+  100% { left: 100%; }
+}
+
+/* Fade in for the preview */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.preview-container {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Spinning robot animation */
+.spinning-icon {
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
