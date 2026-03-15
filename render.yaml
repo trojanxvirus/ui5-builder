@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: ui5builder-api
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_VERSION
+        value: "18"
+      - key: OPENROUTER_KEY
+        sync: false
+      - key: CLIENT_ORIGIN
+        sync: false

@@ -1,9 +1,11 @@
+/**
+ * Navbar.jsx — v2.0
+ */
 import { FaCode, FaMagic } from "react-icons/fa";
 
 function Navbar() {
   return (
     <div
-      className="navbar"
       style={{
         height: "64px",
         display: "flex",
@@ -11,17 +13,16 @@ function Navbar() {
         justifyContent: "space-between",
         padding: "0 24px",
         borderBottom: "1px solid var(--border-color)",
-        background: "rgba(18, 18, 23, 0.8)",
+        background: "rgba(18, 18, 23, 0.95)",
         backdropFilter: "blur(12px)",
         position: "sticky",
         top: 0,
         zIndex: 100,
+        flexShrink: 0,
       }}
     >
-      <div
-        className="nav-left"
-        style={{ display: "flex", alignItems: "center", gap: "12px" }}
-      >
+      {/* Left: Logo */}
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
         <div
           style={{
             background: "var(--accent-purple)",
@@ -32,14 +33,55 @@ function Navbar() {
         >
           <FaCode size={18} color="white" />
         </div>
-        <span
-          style={{ fontWeight: 700, fontSize: "18px", letterSpacing: "-0.5px" }}
-        >
-          UI5<span style={{ color: "var(--accent-purple)" }}>Builder</span>
-        </span>
+        <div>
+          <span
+            style={{
+              fontWeight: 700,
+              fontSize: "18px",
+              letterSpacing: "-0.5px",
+            }}
+          >
+            UI5<span style={{ color: "var(--accent-purple)" }}>Builder</span>
+          </span>
+          <span
+            style={{
+              marginLeft: "8px",
+              fontSize: "10px",
+              color: "var(--text-muted)",
+              background: "#1c1c24",
+              padding: "2px 6px",
+              borderRadius: "4px",
+              border: "1px solid var(--border-color)",
+              letterSpacing: "0.05em",
+            }}
+          >
+            v2.0
+          </span>
+        </div>
       </div>
 
-      <div className="nav-right">
+      {/* Right: Badge */}
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div
+          style={{
+            fontSize: "11px",
+            color: "var(--text-muted)",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+          }}
+        >
+          <span
+            style={{
+              width: "6px",
+              height: "6px",
+              borderRadius: "50%",
+              background: "#10b981",
+              display: "inline-block",
+            }}
+          />
+          Full App Generation
+        </div>
         <div
           style={{
             background: "rgba(139, 92, 246, 0.1)",
