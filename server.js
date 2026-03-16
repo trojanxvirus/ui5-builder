@@ -15,22 +15,53 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const OPENROUTER_KEY = process.env.OPENROUTER_KEY; // ← server-side only, NOT prefixed with VITE_
+const OPENROUTER_KEY = process.env.OPENROUTER_KEY;
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
 
 if (!OPENROUTER_KEY) {
   console.error(
-    "❌  OPENROUTER_KEY is not set in .env — proxy will reject all requests.",
+    "❌  OPENROUTER_KEY is not set — proxy will reject all requests.",
   );
 }
 
+// ─── CORS — allow localhost, Vercel, Render, and BAS origins ─────────────────
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:4173",
+  CLIENT_ORIGIN,
+  // SAP BAS — regex covers any workspace URL on ap21 trial
+  /^https:\/\/port5173-workspaces-ws-[a-z0-9]+\.ap21\.trial\.applicationstudio\.cloud\.sap$/,
+  /^https:\/\/port5173-workspaces-ws-[a-z0-9]+\.ap21\.applicationstudio\.cloud\.sap$/,
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
-    methods: ["POST"],
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const allowed = allowedOrigins.some((o) =>
+        o instanceof RegExp ? o.test(origin) : o === origin,
+      );
+      if (allowed) {
+        callback(null, true);
+      } else {
+        console.warn(`CORS blocked: ${origin}`);
+        callback(new Error(`CORS: origin ${origin} not allowed`));
+      }
+    },
+    methods: ["GET", "POST"],
   }),
 );
 
 app.use(express.json({ limit: "2mb" }));
+
+// ─── Root ─────────────────────────────────────────────────────────────────────
+app.get("/", (_req, res) => {
+  res.json({
+    service: "UI5Builder API",
+    status: "running",
+    node: process.version,
+  });
+});
 
 // ─── Health check ─────────────────────────────────────────────────────────────
 app.get("/health", (_req, res) => res.json({ ok: true }));
@@ -51,8 +82,7 @@ app.post("/api/generate", async (req, res) => {
       .json({ error: "Invalid request body: messages array required." });
   }
 
-  // Hard cap — prevent runaway token usage
-  const safeMaxTokens = Math.min(max_tokens ?? 6000, 8000);
+  const safeMaxTokens = Math.min(max_tokens ?? 8000, 10000);
 
   try {
     const upstream = await fetch(
@@ -62,7 +92,7 @@ app.post("/api/generate", async (req, res) => {
         headers: {
           Authorization: `Bearer ${OPENROUTER_KEY}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": process.env.CLIENT_ORIGIN || "http://localhost:5173",
+          "HTTP-Referer": CLIENT_ORIGIN,
         },
         body: JSON.stringify({
           model: model ?? "deepseek/deepseek-chat",
@@ -70,34 +100,32 @@ app.post("/api/generate", async (req, res) => {
           temperature: temperature ?? 0.2,
           messages,
         }),
-        // Node 18+ native fetch — 90s upstream timeout
         signal: AbortSignal.timeout(90_000),
       },
     );
 
     if (!upstream.ok) {
       const text = await upstream.text();
-      console.error(`OpenRouter error ${upstream.status}:`, text);
+      console.error(`OpenRouter ${upstream.status}:`, text);
 
       const STATUS_MESSAGES = {
-        402: "OpenRouter account has no credits. Add credits at openrouter.ai/credits and try again.",
-        401: "OpenRouter API key is invalid or missing. Check OPENROUTER_KEY in your .env file.",
+        402: "OpenRouter account has no credits. Add credits at openrouter.ai/credits.",
+        401: "OpenRouter API key is invalid. Check OPENROUTER_KEY in environment variables.",
         429: "OpenRouter rate limit reached. Wait a moment and try again.",
-        503: "OpenRouter is temporarily unavailable. Try again in a few seconds.",
+        503: "OpenRouter is temporarily unavailable. Try again shortly.",
       };
 
-      const message =
-        STATUS_MESSAGES[upstream.status] ??
-        `OpenRouter returned ${upstream.status}. Check your account at openrouter.ai.`;
-
-      return res.status(upstream.status).json({ error: message });
+      return res.status(upstream.status).json({
+        error:
+          STATUS_MESSAGES[upstream.status] ??
+          `OpenRouter returned ${upstream.status}.`,
+      });
     }
 
     const data = await upstream.json();
     return res.json(data);
   } catch (err) {
     if (err.name === "TimeoutError" || err.name === "AbortError") {
-      console.error("Upstream request timed out");
       return res
         .status(504)
         .json({ error: "AI request timed out. Please try again." });
@@ -109,7 +137,6 @@ app.post("/api/generate", async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`✅  UI5Builder proxy running on http://localhost:${PORT}`);
-  console.log(
-    `    Forwarding requests to OpenRouter (key: ${OPENROUTER_KEY ? "set ✓" : "MISSING ✗"})`,
-  );
+  console.log(`    Key: ${OPENROUTER_KEY ? "set ✓" : "MISSING ✗"}`);
+  console.log(`    CORS origin: ${CLIENT_ORIGIN}`);
 });

@@ -1,0 +1,24 @@
+applications:
+
+  # ── Frontend — React app (static files) ──────────────────────────────────────
+  - name: ui5builder-frontend-ui5dev
+    memory: 256M
+    disk_quota: 512M
+    buildpacks:
+      - staticfile_buildpack
+    path: dist
+    routes:
+      - route: ui5builder-frontend-ui5dev.cfapps.ap21.hana.ondemand.com
+
+  # ── Backend — Express proxy (holds API key) ───────────────────────────────────
+  - name: ui5builder-api-ui5dev
+    memory: 256M
+    disk_quota: 512M
+    buildpacks:
+      - nodejs_buildpack
+    command: node server.js
+    routes:
+      - route: ui5builder-api-ui5dev.cfapps.ap21.hana.ondemand.com
+    env:
+      OPENROUTER_KEY: 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
+      CLIENT_ORIGIN: https://ui5builder-frontend-ui5dev.cfapps.ap21.hana.ondemand.com
