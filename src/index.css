@@ -3,8 +3,8 @@
 :root {
   --bg-dark: #09090b;
   --bg-card: #121217;
-  --accent-purple: #8b5cf6;
-  --accent-glow: rgba(139, 92, 246, 0.3);
+  --accent-purple: #0070F2;
+  --accent-glow: rgba(0, 112, 242, 0.2);
   --border-color: #27272a;
   --text-main: #f4f4f5;
   --text-muted: #a1a1aa;

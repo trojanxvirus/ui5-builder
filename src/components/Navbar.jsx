@@ -1,5 +1,5 @@
 /**
- * Navbar.jsx — v2.0
+ * Navbar.jsx — v2.1 SAP BTP Style
  */
 import { FaCode, FaMagic } from "react-icons/fa";
 
@@ -12,9 +12,8 @@ function Navbar() {
         alignItems: "center",
         justifyContent: "space-between",
         padding: "0 24px",
-        borderBottom: "1px solid var(--border-color)",
-        background: "rgba(18, 18, 23, 0.95)",
-        backdropFilter: "blur(12px)",
+        borderBottom: "2px solid #0070F2",
+        background: "#1B3A52",
         position: "sticky",
         top: 0,
         zIndex: 100,
@@ -39,6 +38,7 @@ function Navbar() {
               fontWeight: 700,
               fontSize: "18px",
               letterSpacing: "-0.5px",
+              color: "white",
             }}
           >
             UI5<span style={{ color: "var(--accent-purple)" }}>Builder</span>
@@ -47,11 +47,11 @@ function Navbar() {
             style={{
               marginLeft: "8px",
               fontSize: "10px",
-              color: "var(--text-muted)",
-              background: "#1c1c24",
+              color: "rgba(255,255,255,0.5)",
+              background: "rgba(255,255,255,0.08)",
               padding: "2px 6px",
               borderRadius: "4px",
-              border: "1px solid var(--border-color)",
+              border: "1px solid rgba(255,255,255,0.12)",
               letterSpacing: "0.05em",
             }}
           >
@@ -65,7 +65,7 @@ function Navbar() {
         <div
           style={{
             fontSize: "11px",
-            color: "var(--text-muted)",
+            color: "rgba(255,255,255,0.6)",
             display: "flex",
             alignItems: "center",
             gap: "6px",
@@ -84,9 +84,9 @@ function Navbar() {
         </div>
         <div
           style={{
-            background: "rgba(139, 92, 246, 0.1)",
+            background: "rgba(0, 112, 242, 0.2)",
             border: "1px solid var(--accent-purple)",
-            color: "var(--accent-purple)",
+            color: "white",
             padding: "4px 12px",
             borderRadius: "20px",
             fontSize: "12px",
@@ -97,7 +97,7 @@ function Navbar() {
           }}
         >
           <FaMagic size={10} />
-          Fiori AI Core
+          SAP BTP
         </div>
       </div>
     </div>
