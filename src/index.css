@@ -1,38 +1,131 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+/*
+ * SAP Evening Horizon Theme (sap_horizon_dark)
+ * Color values sourced from SAP/theming-base-content on GitHub
+ * https://github.com/SAP/theming-base-content
+ *
+ * "Evening Horizon is an additional theme created for SAP Fiori applications
+ *  to work in environments where low light is necessary or unavoidable."
+ *  — SAP Fiori Design Guidelines
+ *
+ * Font: Noto Sans (closest freely available match to SAP 72)
+ */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
 
 :root {
-  --bg-dark: #09090b;
-  --bg-card: #121217;
-  --accent-purple: #0070F2;
-  --accent-glow: rgba(0, 112, 242, 0.2);
-  --border-color: #27272a;
-  --text-main: #f4f4f5;
-  --text-muted: #a1a1aa;
+  /* ══════════════════════════════════════════════════════════
+     SAP Evening Horizon — Core Tokens
+     (sap_horizon_dark from SAP/theming-base-content)
+  ══════════════════════════════════════════════════════════ */
+
+  /* Page & surface backgrounds */
+  --sapBackgroundColor:          #1c2228;   /* sapBackgroundColor — main page bg     */
+  --sapBaseColor:                #29313a;   /* sapBaseColor — card/panel/table bg    */
+  --sapShellColor:               #1c2228;   /* sapShellColor — shell bar bg          */
+
+  /* Brand & interactive */
+  --sapBrandColor:               #5a96e3;   /* sapBrandColor — SAP blue dark variant */
+  --sapHighlightColor:           #5a96e3;   /* sapHighlightColor — selected/active   */
+  --sapSelectedColor:            #5a96e3;
+  --sapHoverColor:               #2e3840;   /* sapHoverColor — item hover bg         */
+  --sapActiveColor:              #354352;   /* sapActiveColor — pressed state        */
+
+  /* Text */
+  --sapTextColor:                #e5eaf0;   /* sapTextColor — primary text           */
+  --sapTitleColor:               #e5eaf0;   /* sapTitleColor — headings              */
+  --sapLinkColor:                #5a96e3;   /* sapLinkColor — links                  */
+  --sapContent_LabelColor:       #8da6c0;   /* secondary/label text                  */
+  --sapContent_PlaceholderColor: #6b8099;   /* placeholder text in inputs            */
+
+  /* Borders */
+  --sapField_BorderColor:        #4a5664;   /* input/field borders                   */
+  --sapGroup_TitleBorderColor:   #3a4452;   /* section/group borders                 */
+  --sapToolbar_SeparatorColor:   #3a4452;   /* toolbar separator lines               */
+  --sapList_BorderColor:         #2e3840;   /* table/list row borders                */
+  --sapList_HeaderBackground:    #222b33;   /* table header background               */
+
+  /* Field backgrounds */
+  --sapField_Background:         #29313a;   /* input field background                */
+  --sapField_ReadOnly_Background: #222b33;  /* read-only field background            */
+
+  /* Status — Evening Horizon uses brighter variants for dark bg */
+  --sapPositiveColor:            #45c66e;   /* Success — brighter green for dark bg  */
+  --sapNegativeColor:            #ff6b6b;   /* Error — bright red                    */
+  --sapCriticalColor:            #f5a623;   /* Warning — amber                       */
+  --sapInformativeColor:         #5a96e3;   /* Info — same as brand                  */
+  --sapNeutralColor:             #8da6c0;   /* Neutral                               */
+
+  /* ══════════════════════════════════════════════════════════
+     App-specific tokens mapped from SAP tokens above
+  ══════════════════════════════════════════════════════════ */
+
+  /* Shell bar */
+  --shell-bg:               #1c2228;
+  --shell-border:           #2e3840;
+  --shell-text:             rgba(229,234,240,0.9);
+  --shell-icon:             rgba(229,234,240,0.65);
+  --shell-hover:            rgba(255,255,255,0.07);
+
+  /* Sidebar */
+  --sidebar-bg:             #1e2832;
+  --sidebar-border:         #2e3840;
+
+  /* Workspace */
+  --workspace-bg:           #1c2228;
+  --workspace-header:       #222b33;
+  --workspace-border:       #2e3840;
+
+  /* Surfaces */
+  --surface:                #29313a;
+  --surface-alt:            #222b33;
+  --surface-raised:         #2e3840;
+
+  /* SAP Blue — dark theme variant */
+  --sap-blue:               #5a96e3;
+  --sap-blue-dark:          #4a80cc;
+  --sap-blue-light:         rgba(90,150,227,0.15);
+  --sap-blue-glow:          rgba(90,150,227,0.22);
+
+  /* Text on dark backgrounds */
+  --text-primary:           #e5eaf0;
+  --text-secondary:         #8da6c0;
+  --text-faint:             #5a7494;
+  --text-disabled:          #4a5e72;
+  --text-on-surface:        #e5eaf0;
+
+  /* Borders */
+  --border:                 #3a4452;
+  --border-section:         #2e3840;
+
+  /* Status */
+  --status-positive:        #45c66e;
+  --status-warning:         #f5a623;
+  --status-negative:        #ff6b6b;
+
+  /* ── Legacy aliases — keep so existing component code compiles ── */
+  --bg-dark:                #1c2228;
+  --bg-card:                #29313a;
+  --accent-purple:          #5a96e3;
+  --accent-glow:            rgba(90,150,227,0.22);
+  --border-color:           #3a4452;
+  --text-main:              #e5eaf0;
+  --text-muted:             #8da6c0;
 }
+
+*, *::before, *::after { box-sizing: border-box; }
 
 body {
   margin: 0;
-  font-family: 'Inter', sans-serif;
-  background-color: var(--bg-dark);
-  color: var(--text-main);
+  font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont,
+               'Segoe UI', Arial, Helvetica, sans-serif;
+  background: var(--workspace-bg);
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
-* {
-  box-sizing: border-box;
-}
-
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg-dark);
-}
-::-webkit-scrollbar-thumb {
-  background: #27272a;
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-purple);
-}
+/* Evening Horizon scrollbars */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: #3a4452; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--sap-blue); }

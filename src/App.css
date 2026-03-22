@@ -1,5 +1,6 @@
-.app{
-background:#0f1117;
-color:white;
-height:100vh;
+.app {
+  background: var(--workspace-bg);
+  height: 100vh;
+  overflow: hidden;
+  color: var(--text-primary);
 }
