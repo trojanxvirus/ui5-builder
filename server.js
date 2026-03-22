@@ -1,11 +1,6 @@
 /**
- * server.js — API proxy for OpenRouter
- *
- * Keeps OPENROUTER_KEY server-side so it never reaches the browser bundle.
- * Run alongside the Vite dev server: node server.js
- * In production: deploy this as your backend and point VITE_API_BASE to it.
- *
- * Install deps: npm install express cors dotenv
+ * server.js — production-ready API proxy
+ * Deploys to Render (free tier) as a Node.js web service
  */
 import express from "express";
 import cors from "cors";
@@ -24,27 +19,20 @@ if (!OPENROUTER_KEY) {
   );
 }
 
-// ─── CORS — allow localhost, Vercel, Render, and BAS origins ─────────────────
+// CORS — allow both localhost (dev) and the deployed Vercel frontend
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:4173",
   CLIENT_ORIGIN,
-  // SAP BAS — regex covers any workspace URL on ap21 trial
-  /^https:\/\/port5173-workspaces-ws-[a-z0-9]+\.ap21\.trial\.applicationstudio\.cloud\.sap$/,
-  /^https:\/\/port5173-workspaces-ws-[a-z0-9]+\.ap21\.applicationstudio\.cloud\.sap$/,
 ].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      const allowed = allowedOrigins.some((o) =>
-        o instanceof RegExp ? o.test(origin) : o === origin,
-      );
-      if (allowed) {
+      // allow requests with no origin (curl, Render health checks)
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        console.warn(`CORS blocked: ${origin}`);
         callback(new Error(`CORS: origin ${origin} not allowed`));
       }
     },
@@ -54,7 +42,7 @@ app.use(
 
 app.use(express.json({ limit: "2mb" }));
 
-// ─── Root ─────────────────────────────────────────────────────────────────────
+// ─── Root — confirms service is live ─────────────────────────────────────────
 app.get("/", (_req, res) => {
   res.json({
     service: "UI5Builder API",
@@ -63,7 +51,7 @@ app.get("/", (_req, res) => {
   });
 });
 
-// ─── Health check ─────────────────────────────────────────────────────────────
+// ─── Health check — used by Render and uptime monitors ───────────────────────
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
 // ─── Proxy endpoint ───────────────────────────────────────────────────────────
@@ -82,7 +70,7 @@ app.post("/api/generate", async (req, res) => {
       .json({ error: "Invalid request body: messages array required." });
   }
 
-  const safeMaxTokens = Math.min(max_tokens ?? 8000, 10000);
+  const safeMaxTokens = Math.min(max_tokens ?? 8000, 10000); // raised cap to match client
 
   try {
     const upstream = await fetch(
@@ -130,13 +118,51 @@ app.post("/api/generate", async (req, res) => {
         .status(504)
         .json({ error: "AI request timed out. Please try again." });
     }
+    // ECONNRESET — OpenRouter dropped the connection. Retry once automatically.
+    const isConnReset =
+      err.cause?.code === "ECONNRESET" || err.message?.includes("terminated");
+    if (isConnReset) {
+      console.warn("ECONNRESET — retrying once...");
+      try {
+        const retry = await fetch(
+          "https://openrouter.ai/api/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${OPENROUTER_KEY}`,
+              "Content-Type": "application/json",
+              "HTTP-Referer": CLIENT_ORIGIN,
+            },
+            body: JSON.stringify({
+              model: req.body.model ?? "deepseek/deepseek-chat",
+              max_tokens: Math.min(req.body.max_tokens ?? 8000, 10000),
+              temperature: req.body.temperature ?? 0.2,
+              messages: req.body.messages,
+            }),
+            signal: AbortSignal.timeout(90_000),
+          },
+        );
+        if (!retry.ok) {
+          return res
+            .status(retry.status)
+            .json({ error: `OpenRouter returned ${retry.status} on retry.` });
+        }
+        const retryData = await retry.json();
+        return res.json(retryData);
+      } catch (retryErr) {
+        console.error("Retry also failed:", retryErr.message);
+        return res
+          .status(504)
+          .json({ error: "Connection to AI was reset. Please try again." });
+      }
+    }
     console.error("Proxy error:", err);
     return res.status(500).json({ error: "Internal proxy error." });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`✅  UI5Builder proxy running on http://localhost:${PORT}`);
+  console.log(`✅  UI5Builder proxy → http://localhost:${PORT}`);
   console.log(`    Key: ${OPENROUTER_KEY ? "set ✓" : "MISSING ✗"}`);
   console.log(`    CORS origin: ${CLIENT_ORIGIN}`);
 });
