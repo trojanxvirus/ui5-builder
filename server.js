@@ -191,3 +191,4 @@ app.listen(PORT, () => {
   console.log(`    Key: ${OPENROUTER_KEY ? "set ✓" : "MISSING ✗"}`);
   console.log(`    CORS origin: ${CLIENT_ORIGIN}`);
 });
+//updated server.js
