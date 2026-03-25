@@ -13,45 +13,53 @@ import { IoSparkles } from "react-icons/io5";
 
 const TEMPLATES = [
   {
-    label: "📊 Dashboard",
+    label: "📊 Sales Dashboard",
     prompt:
-      "Create a SAP UI5 sales dashboard using DynamicPage List Report floor plan. Inside f:content place a single VBox. First child of VBox is an HBox with 4 GenericTiles: Total Revenue 284000 USD indicator Up valueColor Good, New Orders 47 indicator Up valueColor Good, Active Customers 312 indicator Up valueColor Good, Return Rate 3.2 percent indicator Down valueColor Error. Each GenericTile uses tileContent with TileContent and NumericContent. Second child of VBox is a Table id recentOrders items bound to /orders with columns Order ID Customer Amount Status Date. Table uses noData IllustratedMessage illustrationType sapIllus-EmptyList. Add SearchField in OverflowToolbar. Footer OverflowToolbar has Export button.",
+      "Create a sales dashboard for managers. Show four KPI cards: Total Revenue, New Orders, Active Customers, and Return Rate. Below that show a table of recent orders with columns Order ID, Customer, Amount, Status, and Date. Include a search bar to find orders and an Export button."
   },
+
   {
-    label: "📝 Form",
+    label: "📝 Employee Form",
     prompt:
-      "Create a SAP UI5 employee registration Form Page using DynamicPage and SimpleForm with ResponsiveGridLayout columnsXL 2 columnsL 2. Place the SimpleForm as the single child of f:content wrapped in a VBox. DynamicPageTitle has nav-back and title New Employee Registration. SimpleForm has two core Title sections. Personal Information section: required First Name with valueState bound to form/firstNameState initialized None, required Last Name with valueState bound to form/lastNameState initialized None, Email Input, Phone Input. Employment Details section: Department Select with core Items HR Finance IT Operations Sales, Contract Type Select with core Items Full-time Part-time Contract Intern, Start Date as DatePicker with valueState bound to form/startDateState initialized None. onSave calls validateForm which validates all 3 required fields. Footer OverflowToolbar has Submit Cancel Reset buttons.",
+      "Create a form where HR can register a new employee. Include fields for First Name, Last Name, Email, Phone, Department, Contract Type, and Start Date. Add Submit, Cancel, and Reset buttons."
   },
+
   {
-    label: "📋 List",
+    label: "📋 Customer List",
     prompt:
-      "Create a SAP UI5 customer list page using DynamicPage List Report floor plan. Wrap all f:content children in a single VBox. Table shows 6 customers with columns Name using ObjectIdentifier title and text, Company, Email, Phone, Status as ObjectStatus with Active Success and Inactive Error states. Table uses noData aggregation with IllustratedMessage illustrationType sapIllus-EmptyList title No customers found. Add SearchField liveChange onSearch in OverflowToolbar. onSearch filters binding by name using Filter FilterOperator Contains. DynamicPageTitle has Create button that calls onCreate which unshifts a new customer into the array. Footer OverflowToolbar has Delete button.",
+      "Create a page that shows a list of customers. Display their Name, Company, Email, Phone, and Status. Add a search bar to find customers and a Create button to add a new customer."
   },
+
   {
-    label: "🗂️ Detail",
+    label: "🗂️ Order Details",
     prompt:
-      "Create a SAP UI5 order detail Object Page for Order ORD-2045 using DynamicPage Object Page floor plan. DynamicPageTitle has nav-back button, f:heading Title Order ORD-2045, f:snappedHeading Title ORD-2045, Edit Emphasized and Delete Reject actions. DynamicPageHeader pinnable true shows Customer Acme Corporation, Total Amount 4850 USD ObjectNumber emphasized, Status In Progress ObjectStatus Warning. IconTabBar has 3 tabs: Overview with ObjectHeader showing order title number and 3 ObjectAttributes, Items with Table of 4 line items columns Material Quantity Price using ObjectNumber the Table uses noData IllustratedMessage illustrationType sapIllus-EmptyList, Notes with TextArea value bound to /notes. Wrap the IconTabBar in a VBox inside f:content. Footer OverflowToolbar has Save and Cancel.",
+      "Create a page to view details of an order. Show the customer name, order amount, and status at the top. Include tabs for Overview, Items in the order, and Notes."
   },
+
   {
-    label: "🏪 Catalog",
+    label: "🏪 Product Catalog",
     prompt:
-      "Create a SAP UI5 product catalog page using DynamicPage List Report floor plan. Wrap all f:content children in a single VBox. Table id productTable shows 7 products with columns Product ID, Name, Category, Unit Price as ObjectNumber USD, Stock as ProgressIndicator percentValue bound to stockPercent, Status as ObjectStatus. Table uses noData aggregation with IllustratedMessage illustrationType sapIllus-EmptyList title No products found. OverflowToolbar has SearchField liveChange onSearch that filters by name, and Create button. onSearch uses Filter FilterOperator Contains. DynamicPageHeader shows 3 summary ObjectNumbers Total Products, In Stock, Low Stock. Footer has Export and Delete buttons in OverflowToolbar.",
+      "Create a product catalog page showing a table of products. Include Product ID, Name, Category, Price, Stock Level, and Status. Add a search bar and a button to create a new product."
   },
+
   {
-    label: "📈 Analytics",
+    label: "📈 Analytics Overview",
     prompt:
-      "Create a SAP UI5 analytics overview page using DynamicPage List Report floor plan. Wrap all f:content children in a single VBox. First child of VBox is an HBox with 3 GenericTiles using tileContent TileContent NumericContent: Total Sales 128400 USD indicator Up valueColor Good, Active Users 2847 indicator Up valueColor Good, Conversion Rate 4.2 percent indicator Down valueColor Critical. Second child of VBox is an IconTabBar with 3 tabs: Monthly showing a Table of 6 months with columns Month Revenue Orders Growth percent as ObjectNumber each Table uses noData IllustratedMessage illustrationType sapIllus-EmptyList, Weekly showing a Table of 5 weeks with columns Week Revenue Orders, Daily showing a VBox with 3 ProgressIndicators for Mon Tue Wed each with percentValue and state Success. Footer has Export button.",
-  },
+      "Create an analytics overview page for business managers. Show KPI cards for Total Sales, Active Users, and Conversion Rate. Below that show data tables for monthly and weekly performance."
+  }
 ];
 
 // Generic prompt tips shown in the placeholder
-const PLACEHOLDER = `Describe your SAP UI5 app...
+const PLACEHOLDER = `
+Describe the app you want to build.
 
-Tips for best results:
-• Say which floor plan: list, form, or detail page
-• Name your columns and data fields
-• Mention status colors: Success Warning Error
-• The AI will wrap f:content in VBox automatically`;
+Example:
+• Create a sales dashboard showing revenue and recent orders
+• Create a form to register a new employee
+• Create a page that lists customers with search
+
+The AI will build the full SAP UI5 app automatically.
+`;
 
 function PromptPanel({ onGenerate, loading }) {
   const [prompt, setPrompt] = useState("");
