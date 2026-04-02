@@ -10,14 +10,6 @@ import { useState, useRef, useEffect } from "react";
 import { IoArrowUp } from "react-icons/io5";
 import { FaStop } from "react-icons/fa";
 
-const REFINEMENT_SUGGESTIONS = [
-  "Add a date range filter",
-  "Add export to Excel button",
-  "Add a pie chart for status",
-  "Show colored status badges",
-  "Add a Create dialog",
-  "Add pagination (10 rows)",
-];
 
 function PromptPanel({ onGenerate, onStop, loading, isRefinement }) {
   const [prompt, setPrompt]             = useState("");
@@ -49,16 +41,6 @@ function PromptPanel({ onGenerate, onStop, loading, isRefinement }) {
   return (
     <div className="prompt-panel">
 
-      {/* ── Refinement suggestion chips ── */}
-      {!loading && isRefinement && (
-        <div className="prompt-chips-row">
-          {REFINEMENT_SUGGESTIONS.map((s) => (
-            <button key={s} className="prompt-chip" onClick={() => setPrompt(s)} title={s}>
-              {s}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* ── Input card ── */}
       <div className="prompt-input-card">
