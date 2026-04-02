@@ -7,7 +7,7 @@ services:
     startCommand: node server.js
     envVars:
       - key: NODE_VERSION
-        value: "18"
+        value: "20"
       - key: OPENROUTER_KEY
         sync: false
       - key: CLIENT_ORIGIN

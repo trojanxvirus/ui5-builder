@@ -1,5 +1,16 @@
 /**
- * xmlSanitizer.js — v4.3
+ * xmlSanitizer.js — v4.5
+ *
+ * v4.5 additions:
+ *  11. Escape unescaped `<` inside XML attribute values (expression bindings
+ *      like `{= ${Stock} < 10 ? 'Error' : 'Success'}` cause XML parse error
+ *      "Unescaped '<' not allowed in attribute values").
+ *
+ * v4.4 additions:
+ *  10. Strip <viz:feeds> XML blocks and xmlns:vizFeeds namespace declarations.
+ *      VizFrame feeds CANNOT be declared in XML views — sap/viz/ui5/api/feeds/FeedItem.js
+ *      does not exist as a loadable module and causes a script load error.
+ *      The correct approach is to call oVizFrame.addFeed() in the controller's onInit.
  *
  * v4.3 additions:
  *   9. Fix cardinality 0..1 violations — "multiple aggregates defined for aggregation"
@@ -53,7 +64,21 @@ export function sanitizeXML(xml) {
   // 9. Fix cardinality 0..1 violations
   out = fixCardinalityViolations(out);
 
-  // 6. Namespace injection
+  // 10. Strip VizFrame XML feed declarations — feeds must be wired in the controller
+  //     sap/viz/ui5/api/feeds/FeedItem.js does not exist; the correct module path is
+  //     sap/viz/ui5/controls/common/feeds/FeedItem and must be loaded via sap.ui.define,
+  //     then added with oVizFrame.addFeed() in onInit / _setupCharts().
+  out = fixVizFrameFeeds(out);
+
+  // 11. Escape unescaped `<` inside XML attribute values.
+  //     Common AI mistake in expression bindings, e.g.:
+  //       state="{= ${Stock} < 10 ? 'Error' : 'Success'}"
+  //     The `<` is valid in XML text content but ILLEGAL in attribute values.
+  //     Fix: replace every `<` that appears between double-quoted attribute value boundaries
+  //     with `&lt;`, but only when it is NOT already escaped and NOT the start of a tag.
+  out = escapeUnescapedLTInAttrs(out);
+
+  // 6. Namespace injection — add missing xmlns declarations; never remove existing ones
   if (!out.includes("xmlns:mvc")) {
     out = out.replace(/(<mvc:View\b)/, '$1 xmlns:mvc="sap.ui.core.mvc"');
   }
@@ -71,6 +96,27 @@ export function sanitizeXML(xml) {
   }
   if (out.includes("l:") && !out.includes("xmlns:l=")) {
     out = out.replace(/(<mvc:View\b)/, '$1 xmlns:l="sap.ui.layout"');
+  }
+  // Smart control namespaces — auto-inject if controls are used but namespace is missing
+  if (out.includes("smartTable:") && !out.includes('xmlns:smartTable=')) {
+    out = out.replace(/(<mvc:View\b)/, '$1 xmlns:smartTable="sap.ui.comp.smarttable"');
+  }
+  if (out.includes("smartFilter:") && !out.includes('xmlns:smartFilter=')) {
+    out = out.replace(/(<mvc:View\b)/, '$1 xmlns:smartFilter="sap.ui.comp.smartfilterbar"');
+  }
+  if (out.includes("smartForm:") && !out.includes('xmlns:smartForm=')) {
+    out = out.replace(/(<mvc:View\b)/, '$1 xmlns:smartForm="sap.ui.comp.smartform"');
+  }
+  // viz namespaces — auto-inject if VizFrame controls are present
+  if (out.includes("viz:") && !out.includes('xmlns:viz=')) {
+    out = out.replace(/(<mvc:View\b)/, '$1 xmlns:viz="sap.viz.ui5.controls"');
+  }
+  if (out.includes("vizData:") && !out.includes('xmlns:vizData=')) {
+    out = out.replace(/(<mvc:View\b)/, '$1 xmlns:vizData="sap.viz.ui5.data"');
+  }
+  // sap.ui.table namespace
+  if (out.includes("table:") && !out.includes('xmlns:table=')) {
+    out = out.replace(/(<mvc:View\b)/, '$1 xmlns:table="sap.ui.table"');
   }
 
   return out;
@@ -276,6 +322,46 @@ function migrateNoDataText(xml) {
 }
 
 /**
+ * Strips VizFrame feed declarations from XML views.
+ *
+ * The sap/viz/ui5/api/feeds/FeedItem module does not exist in SAP UI5 and causes a
+ * "failed to load … FeedItem.js: script load error" at runtime.
+ *
+ * Correct approach: remove <viz:feeds> from the view entirely; the controller imports
+ * "sap/viz/ui5/controls/common/feeds/FeedItem" via sap.ui.define and calls addFeed()
+ * in _setupCharts() / onInit().
+ *
+ * This sanitizer:
+ *   1. Removes any xmlns:vizFeeds="..." namespace declaration from the root element.
+ *   2. Removes any <viz:feeds>...</viz:feeds> aggregation block.
+ *   3. Removes any self-closing <vizFeeds:FeedItem.../> elements that may linger.
+ */
+function fixVizFrameFeeds(xml) {
+  let out = xml;
+
+  // 1. Drop xmlns:vizFeeds namespace declaration (any value — wrong path or right path)
+  out = out.replace(/\s+xmlns:vizFeeds="[^"]*"/g, "");
+
+  // 2. Remove <viz:feeds> ... </viz:feeds> blocks (multiline)
+  out = out.replace(/<viz:feeds>[\s\S]*?<\/viz:feeds>/g, "");
+
+  // 3. Remove any stray self-closing feed items
+  out = out.replace(/<vizFeeds:[^/]*\/>/g, "");
+
+  // 4. Remove any non-self-closing feed items
+  out = out.replace(/<vizFeeds:[^>]*>[\s\S]*?<\/vizFeeds:[^>]+>/g, "");
+
+  if (out !== xml) {
+    console.warn(
+      "xmlSanitizer: stripped <viz:feeds> / xmlns:vizFeeds from view XML. " +
+      "VizFrame feeds must be added programmatically via oVizFrame.addFeed() in the controller."
+    );
+  }
+
+  return out;
+}
+
+/**
  * Detects xmlns:f="sap.ui.layout.form" (wrong) and renames all f: form tags to form:.
  */
 function fixFormNamespacePrefix(xml) {
@@ -307,4 +393,51 @@ function fixFormNamespacePrefix(xml) {
   });
 
   return out;
+}
+
+/**
+ * Escapes unescaped `<` characters that appear inside XML attribute values
+ * (i.e., between double-quote delimiters of an attribute).
+ *
+ * SAP UI5 expression bindings like:
+ *   state="{= ${Stock} < 10 ? 'Error' : 'Success'}"
+ * are valid binding syntax but the `<` violates XML well-formedness inside
+ * attribute values. The XML parser throws "Unescaped '<' not allowed in
+ * attribute values" and refuses to parse the view at all.
+ *
+ * Strategy: scan character-by-character, tracking whether we are inside a
+ * double-quoted attribute value. This avoids false positives from `<` in tag
+ * names or text content.
+ */
+function escapeUnescapedLTInAttrs(xml) {
+  let result = "";
+  let inAttr = false;
+  let i = 0;
+
+  while (i < xml.length) {
+    const ch = xml[i];
+
+    if (!inAttr) {
+      if (ch === '"') {
+        const prev = result.trimEnd();
+        if (prev.endsWith("=")) {
+          inAttr = true;
+        }
+      }
+      result += ch;
+    } else {
+      if (ch === '"') {
+        inAttr = false;
+        result += ch;
+      } else if (ch === "<") {
+        result += "&lt;";
+      } else {
+        result += ch;
+      }
+    }
+
+    i++;
+  }
+
+  return result;
 }

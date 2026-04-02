@@ -18,7 +18,7 @@ function extractControllerModuleKey(xml) {
   return match[1].replace(/\./g, "/") + ".controller.js";
 }
 
-function PreviewFrame({ files, xml: xmlProp }) {
+function PreviewFrame({ files, xml: xmlProp, capStatus = "idle", isCapProject = false }) {
   const [loading, setLoading] = useState(true);
   const [renderError, setRenderError] = useState(null);
   const handlerRef = useRef(null);
@@ -64,7 +64,108 @@ function PreviewFrame({ files, xml: xmlProp }) {
       window.removeEventListener("message", handler);
       clearTimeout(timeoutRef.current);
     };
-  }, [xml, controllerJs]);
+  }, [xml, controllerJs, capStatus]);
+
+  // Shared inline code block style used in error panels
+  const codeStyle = {
+    background: "#f0f0f0", border: "1px solid #ddd",
+    borderRadius: "3px", padding: "1px 5px",
+    fontFamily: "monospace", fontSize: "11px",
+  };
+
+  // ── CAP mode ──────────────────────────────────────────────────────────────
+  // Show a seed-data preview immediately (no OData V4 connection needed).
+  // The CDS service status is displayed via the CapStatusBadge in the header.
+  if (isCapProject && xml) {
+    const manifestFile = files?.find((f) => f.path === "webapp/manifest.json");
+    const capSrcDoc = buildCAPPreviewHTML(xml, controllerJs, manifestFile?.content, files);
+    return (
+      <div style={{ height: "100%", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        {/* Small info banner */}
+        {/* Dynamic banner + optional error panel */}
+        {(() => {
+          const hasSmartControls = /xmlns:smartTable|xmlns:smartFilter|SmartTable|SmartFilterBar/i.test(xml);
+          let odataUrl = "/odata/…/";
+          try {
+            const mf = JSON.parse(manifestFile?.content ?? "{}");
+            odataUrl = mf["sap.ui5"]?.models?.[""]?.settings?.serviceUrl ?? odataUrl;
+          } catch (_) {}
+
+          const banner = (
+            <div style={{
+              fontSize: "11px", padding: "4px 12px",
+              background: hasSmartControls ? "#fff8e1" : "#e8f4ea",
+              borderBottom: `1px solid ${hasSmartControls ? "#ffe082" : "#b7dfbb"}`,
+              color: hasSmartControls ? "#7a5a00" : "#1a7a2e",
+              display: "flex", alignItems: "center", gap: "6px", flexShrink: 0, flexWrap: "wrap",
+            }}>
+              {hasSmartControls ? (
+                <>
+                  <span style={{ fontWeight: 600 }}>SmartTable Preview</span>
+                  <span style={{ color: "#555" }}>Seed data shown via sap.m.Table —</span>
+                  <span>SmartTable/SmartFilterBar XML ready for OData V2 deployment</span>
+                  <span>| OData V4 seed endpoint: <code style={{ background: "#fff3cd", padding: "1px 4px", borderRadius: "3px" }}>{odataUrl}</code></span>
+                </>
+              ) : (
+                <>
+                  <span style={{ fontWeight: 600 }}>CAP Preview</span>
+                  <span style={{ color: "#555" }}>Showing seed data —</span>
+                  <span>OData V4 live endpoint: <code style={{ background: "#d4edda", padding: "1px 4px", borderRadius: "3px" }}>{odataUrl}</code></span>
+                </>
+              )}
+              {capStatus === "starting" && <span style={{ marginLeft: "auto", color: "#e67e00", fontWeight: 600 }}>⏳ CDS starting…</span>}
+              {capStatus === "ready"    && <span style={{ marginLeft: "auto", color: "#1a7a2e", fontWeight: 600 }}>✅ OData live</span>}
+              {capStatus === "error"    && <span style={{ marginLeft: "auto", color: "#c00",    fontWeight: 600 }}>⚠ CDS failed — see steps below</span>}
+            </div>
+          );
+
+          // Expanded "run locally" panel — only when CDS deploy failed
+          const errorPanel = capStatus === "error" && (
+            <div style={{
+              background: "#fff8f8", borderBottom: "1px solid #f5c6cb",
+              padding: "12px 16px", fontSize: "12px", color: "#444", flexShrink: 0,
+            }}>
+              <div style={{ fontWeight: 700, color: "#c00", marginBottom: "8px" }}>
+                ⚠ The local CDS service failed to start. The preview above still works with seed data.
+              </div>
+              <div style={{ fontWeight: 600, marginBottom: "6px", color: "#333" }}>
+                To run the OData backend locally and connect SmartTable to live data:
+              </div>
+              <ol style={{ margin: "0 0 10px 18px", lineHeight: "1.9" }}>
+                <li>Download the ZIP using the <strong>Download</strong> button in the file panel</li>
+                <li>Unzip and open a terminal in the project folder</li>
+                <li>Run: <code style={codeStyle}>npm install</code></li>
+                <li>Run: <code style={codeStyle}>npx cds serve</code> — OData V4 starts at <code style={codeStyle}>http://localhost:4004</code></li>
+                <li>Open <code style={codeStyle}>webapp/manifest.json</code> and verify <code style={codeStyle}>serviceUrl</code> matches the CDS path</li>
+              </ol>
+              {hasSmartControls && (
+                <>
+                  <div style={{ fontWeight: 600, marginBottom: "6px", color: "#7a5a00" }}>
+                    To connect SmartTable/SmartFilterBar to a real SAP OData V2 backend:
+                  </div>
+                  <ol style={{ margin: "0 0 0 18px", lineHeight: "1.9" }}>
+                    <li>In <code style={codeStyle}>webapp/manifest.json</code>, change the model type to <code style={codeStyle}>sap.ui.model.odata.v2.ODataModel</code></li>
+                    <li>Set <code style={codeStyle}>serviceUrl</code> to your SAP Gateway endpoint (e.g. <code style={codeStyle}>/sap/opu/odata/sap/ZVENDOR_SRV/</code>)</li>
+                    <li>Ensure the entity set name in <code style={codeStyle}>SmartTable entitySet="…"</code> matches your OData metadata</li>
+                    <li>Deploy to SAP BTP or ABAP launchpad — SmartTable auto-reads columns from <code style={codeStyle}>$metadata</code></li>
+                  </ol>
+                </>
+              )}
+            </div>
+          );
+
+          return <>{banner}{errorPanel}</>;
+        })()}
+        <iframe
+          key="cap-preview"
+          srcDoc={capSrcDoc}
+          title="CAP Preview"
+          sandbox="allow-scripts allow-same-origin allow-forms"
+          style={{ width: "100%", flex: 1, border: "none", display: "block" }}
+        />
+      </div>
+    );
+  }
 
   if (!xml) {
     return (
@@ -87,6 +188,22 @@ function PreviewFrame({ files, xml: xmlProp }) {
         <div style={{ fontSize: "12px", color: "#bbb" }}>
           Use the prompt panel on the left
         </div>
+      </div>
+    );
+  }
+
+  // Smart controls — in CAP mode we already handled above; here it means Floor Plan 6
+  // (static advisory, no live CDS service)
+  const smartControls = detectSmartControls(xml);
+  if (smartControls.length > 0) {
+    return (
+      <div style={{ height: "100%", overflow: "auto" }}>
+        <iframe
+          srcDoc={buildSmartAdvisoryHTML(smartControls)}
+          title="Smart Controls Advisory"
+          sandbox="allow-scripts"
+          style={{ width: "100%", height: "100%", border: "none", display: "block" }}
+        />
       </div>
     );
   }
@@ -156,6 +273,273 @@ function PreviewFrame({ files, xml: xmlProp }) {
   );
 }
 
+// ── Smart control detection ────────────────────────────────────────────────────
+// SmartTable / SmartFilterBar require a live OData service. Attempting to load
+// sap.ui.comp in the sandbox produces an immediate crash or blank render.
+// Instead, we detect these controls and show an informative advisory.
+function detectSmartControls(xml) {
+  if (!xml) return [];
+  const found = [];
+  if (/xmlns:smartTable\s*=|<smartTable:SmartTable/.test(xml)) found.push("SmartTable");
+  if (/xmlns:smartFilter\s*=|<smartFilter:SmartFilterBar/.test(xml)) found.push("SmartFilterBar");
+  if (/sap\.ui\.comp\.smartform|<smartForm:/.test(xml)) found.push("SmartForm");
+  return found;
+}
+
+function buildSmartAdvisoryHTML(smartControls) {
+  const list = smartControls.map((c) => `<li>${c}</li>`).join("");
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "72", Arial, Helvetica, sans-serif;
+      background: #f5f5f5;
+      display: flex; align-items: center; justify-content: center;
+      height: 100vh; padding: 24px;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #d1e7f5;
+      border-radius: 8px;
+      padding: 32px 36px;
+      max-width: 560px;
+      width: 100%;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .icon { font-size: 48px; margin-bottom: 16px; }
+    h2 { font-size: 18px; font-weight: 700; color: #1a5276; margin-bottom: 10px; }
+    p  { font-size: 13px; color: #444; line-height: 1.6; margin-bottom: 14px; }
+    .controls-list {
+      background: #eaf4fb; border-radius: 6px;
+      padding: 12px 16px; margin-bottom: 16px;
+    }
+    .controls-list h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #1a5276; margin-bottom: 8px; }
+    .controls-list ul { list-style: none; padding: 0; }
+    .controls-list li {
+      font-size: 13px; font-weight: 600; color: #154360;
+      padding: 4px 0; border-bottom: 1px solid #d1e7f5;
+    }
+    .controls-list li:last-child { border: none; }
+    .controls-list li::before { content: "✓  "; color: #0070f2; }
+    .steps { counter-reset: step; }
+    .step { display: flex; gap: 12px; margin-bottom: 10px; align-items: flex-start; }
+    .step-num {
+      background: #0070f2; color: #fff; border-radius: 50%;
+      width: 22px; height: 22px; display: flex; align-items: center;
+      justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .step-text { font-size: 12px; color: #444; line-height: 1.5; }
+    .badge {
+      display: inline-block; background: #eaf4fb; border: 1px solid #aed6f1;
+      color: #1a5276; font-size: 10px; font-weight: 700; padding: 2px 8px;
+      border-radius: 10px; text-transform: uppercase; letter-spacing: .06em;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">🔗</div>
+    <span class="badge">OData Required</span>
+    <h2 style="margin-top:10px">Smart Controls — Code Generated Successfully</h2>
+    <p>
+      The following SAP smart controls have been generated and are <strong>ready for deployment</strong>.
+      They require a live OData V2/V4 backend service to render data — they cannot be previewed
+      in a static sandbox environment.
+    </p>
+
+    <div class="controls-list">
+      <h4>Generated Smart Controls</h4>
+      <ul>${list}</ul>
+    </div>
+
+    <p style="font-weight:600;color:#1a5276;">To use in your SAP project:</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text">Download the ZIP and unzip it. Open a terminal in the project folder.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text">Run <code>npm install</code> then <code>npx cds serve</code> — this starts a local OData V4 service at <code>http://localhost:4004</code> with seed data.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text">To connect to a real SAP OData V2 backend, change <code>manifest.json</code> model type to <code>sap.ui.model.odata.v2.ODataModel</code> and set <code>serviceUrl</code> to your SAP Gateway endpoint (e.g. <code>/sap/opu/odata/sap/ZVENDOR_SRV/</code>).</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-text">Ensure the <code>entitySet</code> in the SmartTable XML matches your OData metadata entity set name. SmartTable auto-reads columns, SmartFilterBar auto-reads filters from <code>$metadata</code>.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-text">Deploy to SAP BTP or ABAP Launchpad. The app uses standard UI5 manifest routing — no additional config needed.</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+/**
+ * Build the live CAP preview HTML.
+ * The UI5 app runs against the real CDS OData V4 service at /odata/v4/<path>/.
+ * manifest.json is injected inline so the OData model config is picked up.
+ * The Vite dev-server proxy (or Nginx in production) forwards /odata/* → port 4004.
+ */
+/**
+ * Build the CAP preview HTML using seed data instead of a live OData V4 connection.
+ *
+ * The approach:
+ * 1. Extract seed records from `srv/data/*.json` in the generated files.
+ * 2. Infer columns from the seed record keys.
+ * 3. Build a clean sap.f.DynamicPage + sap.m.Table view (bypasses SmartTable issues).
+ * 4. Delegate to buildPreviewHTML() for the actual srcdoc rendering.
+ *
+ * This eliminates every "sModelName must be a string or omitted" OData V4 assertion and
+ * the SmartTable "no visible columns" problem — both are irrelevant for a preview.
+ */
+function buildCAPPreviewHTML(xml, controllerJs, manifestJson, files) {
+  if (!xml) return "<html><body></body></html>";
+
+  // ── 1. Read odataUri from manifest (shown as informational note) ────────
+  let odataUri = "/odata/customer/";
+  try {
+    const mf = JSON.parse(manifestJson ?? "{}");
+    const modelSettings = mf["sap.ui5"]?.models?.[""]?.settings;
+    if (modelSettings?.serviceUrl) {
+      odataUri = modelSettings.serviceUrl;
+    } else {
+      const firstDs = Object.values(mf["sap.app"]?.dataSources ?? {})[0];
+      if (firstDs?.uri) odataUri = firstDs.uri;
+    }
+  } catch (_) {}
+
+  // ── 2. Extract seed data from generated file tree ───────────────────────
+  let seedData   = [];
+  let seedFields = [];
+  try {
+    const seedFile = files?.find(
+      (f) => f.path.startsWith("srv/data/") && f.path.endsWith(".json"),
+    );
+    if (seedFile) {
+      const parsed = JSON.parse(seedFile.content);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        seedData   = parsed;
+        seedFields = Object.keys(parsed[0]);
+      }
+    }
+  } catch (_) {}
+
+  // ── 3. Extract page title from the generated XML ────────────────────────
+  const titleM   = xml.match(/Title\s+text="([^"]+)"/);
+  const pageTitle = titleM?.[1] || "Application";
+
+  // ── 4. If no seed data, fall back to the original view ──────────────────
+  if (seedFields.length === 0) {
+    return buildPreviewHTML(xml, controllerJs);
+  }
+
+  // ── 5. Build a proper sap.m.Table view from seed fields ─────────────────
+  const columns = seedFields
+    .map((f) => `<Column><Text text="${f}"/></Column>`)
+    .join("\n        ");
+
+  const cells = seedFields
+    .map((f) => {
+      if (/status|state/i.test(f))
+        return `<ObjectStatus text="{${f}}" state="{= \${${f}} === 'Active' ? 'Success' : \${${f}} === 'Inactive' ? 'Error' : 'Warning'}"/>`;
+      if (/revenue|amount|price|total|qty|quantity/i.test(f))
+        return `<ObjectNumber number="{${f}}" unit="USD"/>`;
+      if (/(^id$|id$|^.*id$)/i.test(f))
+        return `<ObjectIdentifier title="{${f}}"/>`;
+      return `<Text text="{${f}}"/>`;
+    })
+    .join("\n              ");
+
+  const fallbackView = `<mvc:View controllerName="com.ui5builder.app.controller.Main"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    height="100%">
+  <f:DynamicPage id="page" headerExpanded="true" toggleHeaderOnTitleClick="false">
+    <f:title>
+      <f:DynamicPageTitle>
+        <f:heading><Title text="${pageTitle}"/></f:heading>
+        <f:snappedHeading><Title text="${pageTitle}" wrapping="true"/></f:snappedHeading>
+        <f:actions>
+          <SearchField id="searchField" width="220px" placeholder="Search..."
+                       liveChange=".onSearch"/>
+          <Button text="Add" type="Emphasized" icon="sap-icon://add" press=".onAdd"/>
+        </f:actions>
+      </f:DynamicPageTitle>
+    </f:title>
+    <f:content>
+      <Table id="mainTable"
+             items="{/items}"
+             growing="true"
+             growingThreshold="20"
+             alternateRowColors="true"
+             noDataText="No records found">
+        <headerToolbar>
+          <OverflowToolbar>
+            <Title text="${pageTitle}" level="H3"/>
+            <ToolbarSpacer/>
+            <Button icon="sap-icon://sort" tooltip="Sort"/>
+          </OverflowToolbar>
+        </headerToolbar>
+        <columns>
+          ${columns}
+        </columns>
+        <items>
+          <ColumnListItem type="Navigation">
+            <cells>
+              ${cells}
+            </cells>
+          </ColumnListItem>
+        </items>
+      </Table>
+    </f:content>
+  </f:DynamicPage>
+</mvc:View>`;
+
+  // ── 6. Build controller with JSONModel + client-side search ─────────────
+  const dataJson = JSON.stringify(seedData);
+  const fallbackCtrl = `sap.ui.define([
+    "sap/ui/core/mvc/Controller",
+    "sap/ui/model/json/JSONModel"
+], function (Controller, JSONModel) {
+    "use strict";
+    return Controller.extend("com.ui5builder.app.controller.Main", {
+        onInit: function () {
+            this._aAll    = ${dataJson};
+            this._oModel  = new JSONModel({ items: this._aAll });
+            this.getView().setModel(this._oModel);
+            console.info("[CAP Preview] Seed data loaded. OData V4 live at: ${odataUri}");
+        },
+        onSearch: function (oEvent) {
+            var sQ = (oEvent.getParameter("newValue") || "").toLowerCase();
+            this._oModel.setProperty("/items",
+                sQ
+                    ? this._aAll.filter(function (r) {
+                          return Object.values(r).some(function (v) {
+                              return String(v).toLowerCase().indexOf(sQ) !== -1;
+                          });
+                      })
+                    : this._aAll
+            );
+        },
+        onAdd: function () {
+            sap.m.MessageToast.show("Add record — implement as needed");
+        }
+    });
+});`;
+
+  return buildPreviewHTML(fallbackView, fallbackCtrl);
+}
+
 function buildPreviewHTML(xml, controllerJs) {
   if (!xml) return "<html><body></body></html>";
 
@@ -175,7 +559,7 @@ function buildPreviewHTML(xml, controllerJs) {
     id="sap-ui-bootstrap"
     src="https://ui5.sap.com/1.120/resources/sap-ui-core.js"
     data-sap-ui-theme="sap_horizon"
-    data-sap-ui-libs="sap.m,sap.f,sap.ui.core,sap.ui.layout,sap.ui.unified"
+    data-sap-ui-libs="sap.m,sap.f,sap.ui.core,sap.ui.layout,sap.ui.unified,sap.viz,sap.ui.table"
     data-sap-ui-async="true"
     data-sap-ui-compatVersion="edge"
     data-sap-ui-frameOptions="allow"
