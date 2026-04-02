@@ -220,16 +220,21 @@ function Home() {
           )}
         </div>
 
-        <div className="chat-history-wrapper">
-          <ChatHistory messages={conversation} loading={loading} onRetry={handleGenerate} onEdit={handleEdit} onTemplateSelect={handleGenerate} />
-        </div>
-
-        <PromptPanel
-          onGenerate={handleGenerate}
-          onStop={handleStop}
-          loading={loading}
-          isRefinement={isRefinementMode}
-        />
+        {conversation.length === 0 && !loading ? (
+          /* Empty state — group hints + input as one centered block */
+          <div className="sidebar-centered">
+            <ChatHistory messages={conversation} loading={loading} onRetry={handleGenerate} onEdit={handleEdit} onTemplateSelect={handleGenerate} />
+            <PromptPanel onGenerate={handleGenerate} onStop={handleStop} loading={loading} isRefinement={isRefinementMode} />
+          </div>
+        ) : (
+          /* Active conversation — scrollable history + fixed bottom input */
+          <>
+            <div className="chat-history-wrapper">
+              <ChatHistory messages={conversation} loading={loading} onRetry={handleGenerate} onEdit={handleEdit} onTemplateSelect={handleGenerate} />
+            </div>
+            <PromptPanel onGenerate={handleGenerate} onStop={handleStop} loading={loading} isRefinement={isRefinementMode} />
+          </>
+        )}
       </div>
 
       {/* ── Workspace ───────────────────────────────────── */}
