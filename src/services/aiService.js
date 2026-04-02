@@ -322,7 +322,7 @@ IMPORTANT: Use double quotes for all XML attributes. NEVER use single quotes.
     </f:title>
     <f:content>
       <VBox>
-        <HBox wrap="Wrap" justifyContent="SpaceBetween" class="sapUiSmallMargin">
+        <HBox wrap="Wrap" class="sapUiSmallMarginTop sapUiSmallMarginBegin">
           <GenericTile header="Total Revenue" subheader="This Year" class="sapUiSmallMarginEnd sapUiSmallMarginBottom">
             <tileContent>
               <TileContent unit="USD">
@@ -969,6 +969,13 @@ CONTROLLER — combined filter helper:
 ❌ NEVER use separate filter arrays in onSearch and onStatusFilter — they overwrite each other
 ❌ NEVER use key="active" when model data has status:"Active" — case must match exactly
 ❌ NEVER omit the "All" / key="" item — user cannot clear the filter otherwise
+
+KPI TILE LAYOUT RULE:
+❌ NEVER use justifyContent="SpaceBetween" on the HBox wrapping GenericTiles — pushes tiles to opposite
+   screen edges leaving huge gaps when there are fewer than ~5 tiles.
+✅ ALWAYS use: <HBox wrap="Wrap" class="sapUiSmallMarginTop sapUiSmallMarginBegin">
+✅ Each GenericTile gets: class="sapUiSmallMarginEnd sapUiSmallMarginBottom"
+   Tiles then flow left-to-right naturally and wrap on smaller screens with consistent spacing.
 
 Return ONLY the 6 ---FILE--- blocks. No other text.`;
 
