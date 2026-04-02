@@ -920,7 +920,57 @@ CORRECT — always wrap in VBox when putting multiple controls in f:content:
     </VBox>
   </f:content>
 
-Return ONLY the 6 ---FILE--- blocks. No other text.`;
+══════════════════════════════════════════════════════════════
+STATUS FILTER — always follow this exact pattern
+══════════════════════════════════════════════════════════════
+When a status filter Select/ComboBox is needed in the toolbar:
+
+RULE 1 — Select item keys MUST exactly match (case-sensitive) the status string values
+         stored in the JSONModel. If model data has status:"Active" then key="Active".
+         NEVER use lowercase keys like key="active" when data has "Active" — EQ filter returns zero results.
+
+RULE 2 — Always use a _applyFilters() helper that combines search + status in one call.
+         NEVER let onSearch and onStatusFilter overwrite each other's filter array.
+
+RULE 3 — Always include an "All" option with key="" that clears the status filter.
+
+CORRECT PATTERN — use this for every list/table with both a search field and a status filter:
+
+VIEW — Select in OverflowToolbar:
+  <Select id="statusFilter" width="150px" change=".onStatusFilter" forceSelection="false">
+    <core:Item key="" text="All Statuses"/>
+    <core:Item key="Active" text="Active"/>
+    <core:Item key="Inactive" text="Inactive"/>
+    <core:Item key="Pending" text="Pending"/>
+  </Select>
+
+CONTROLLER — combined filter helper:
+  _applyFilters: function () {
+      var sQuery  = this.byId("searchField") ? this.byId("searchField").getValue() : "";
+      var oSelect = this.byId("statusFilter");
+      var sStatus = oSelect ? oSelect.getSelectedKey() : "";
+      var aFilters = [];
+      if (sQuery.trim()) {
+          aFilters.push(new Filter("name", FilterOperator.Contains, sQuery));
+      }
+      if (sStatus) {
+          aFilters.push(new Filter("status", FilterOperator.EQ, sStatus));
+      }
+      var oTable = this.byId("mainTable") || this.byId("mainList");
+      if (oTable) oTable.getBinding("items").filter(aFilters);
+  },
+  onSearch: function (oEvent) {
+      this._applyFilters();
+  },
+  onStatusFilter: function () {
+      this._applyFilters();
+  },
+
+❌ NEVER use separate filter arrays in onSearch and onStatusFilter — they overwrite each other
+❌ NEVER use key="active" when model data has status:"Active" — case must match exactly
+❌ NEVER omit the "All" / key="" item — user cannot clear the filter otherwise
+
+Return ONLY the 6 ---FILE--- blocks. No other text.\`;
 
 // ─── Parse file blocks ────────────────────────────────────────────────────────
 function parseFileBlocks(text) {
@@ -1471,8 +1521,12 @@ CHART RULE: _setupCharts aCharts entries must ONLY contain { id, dimUid, valUid 
 The dimension and measure names are read at runtime from c.getDataset().getDimensions/getMeasures().
 This prevents [50017] "Invalid data binding" errors caused by name mismatches.
 
+STATUS FILTER RULE: Select item key values MUST exactly match (case-sensitive) the status strings
+in the JSONModel. Use _applyFilters() to combine search + status — never overwrite filters separately.
+❌ key="active" when model has status:"Active" → EQ filter returns zero results.
+
 RULE: Only change what was explicitly requested. Preserve all other structure, bindings, and logic.
-Output ONLY the files that changed.`;
+Output ONLY the files that changed.\`;
 
 // ─── Merge helper ─────────────────────────────────────────────────────────────
 // Combines the AI's partial output (only changed files) with the original full
