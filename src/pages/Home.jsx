@@ -7,7 +7,7 @@
  * - capStatus tracks "idle" | "starting" | "ready" | "error"
  * - PreviewFrame receives capStatus so it can switch to live-OData iframe mode
  */
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import PromptPanel from "../components/PromptPanel";
 import ChatHistory from "../components/ChatHistory";
 import FileExplorer from "../components/FileExplorer";
@@ -36,12 +36,18 @@ function Home() {
   const [loading, setLoading]             = useState(false);
   const [appMeta, setAppMeta]             = useState(null);
 
+  // Abort controller ref — lets the Stop button cancel in-flight AI requests
+  const abortControllerRef = useRef(null);
+
   // CAP-specific state
   const [capStatus, setCapStatus]         = useState("idle"); // idle | starting | ready | error
   const [capError, setCapError]           = useState(null);
   const [isCapProject, setIsCapProject]   = useState(false);
 
   const isRefinementMode = files.length > 0;
+
+  // When editing a past message we pass the pre-edit files directly so
+  // handleGenerate doesn't read stale state from the closure.
 
   /** Deploy CDS files to the local server and update capStatus. */
   const handleCAPDeploy = useCallback(async (generatedFiles) => {
@@ -57,8 +63,21 @@ function Home() {
     }
   }, []);
 
-  async function handleGenerate(prompt) {
+  function handleStop() {
+    abortControllerRef.current?.abort();
+  }
+
+  // baseFiles: when called from handleEdit, pass the pre-edit files directly
+  // so we don't read stale state. When called normally, defaults to current files.
+  async function handleGenerate(prompt, baseFiles) {
     if (!prompt || loading) return;
+
+    const effectiveFiles   = baseFiles !== undefined ? baseFiles : files;
+    const isRefinement     = effectiveFiles.length > 0;
+
+    // Create a fresh abort controller for this request
+    const abortCtrl = new AbortController();
+    abortControllerRef.current = abortCtrl;
 
     const userMsgId = nextId();
     const aiMsgId   = nextId();
@@ -73,19 +92,19 @@ function Home() {
 
     try {
       let generated;
-      const shouldGenerateCAP   = !isRefinementMode && CAP_KEYWORDS.test(prompt);
-      const shouldGenerateSmart = !isRefinementMode && !shouldGenerateCAP && SMART_KEYWORDS.test(prompt);
+      const shouldGenerateCAP   = !isRefinement && CAP_KEYWORDS.test(prompt);
+      const shouldGenerateSmart = !isRefinement && !shouldGenerateCAP && SMART_KEYWORDS.test(prompt);
 
       if (shouldGenerateCAP) {
         // Floor Plan 7 — full-stack CAP generation with sap.m.Table
-        generated = await generateCAPApp(prompt);
+        generated = await generateCAPApp(prompt, abortCtrl.signal);
       } else if (shouldGenerateSmart) {
         // SmartTable + SmartFilterBar with CDS seed data backend
-        generated = await generateSmartCAPApp(prompt);
-      } else if (isRefinementMode) {
-        generated = await refineApp(prompt, files);
+        generated = await generateSmartCAPApp(prompt, abortCtrl.signal);
+      } else if (isRefinement) {
+        generated = await refineApp(prompt, effectiveFiles, abortCtrl.signal);
       } else {
-        generated = await generateApp(prompt);
+        generated = await generateApp(prompt, abortCtrl.signal);
       }
 
       const capProject = isCAPProject(generated);
@@ -119,6 +138,12 @@ function Home() {
         handleCAPDeploy(generated);
       }
     } catch (err) {
+      // User clicked Stop — silently remove the loading bubble, no error shown
+      if (err.name === "AbortError" && abortCtrl.signal.aborted) {
+        setConversation((prev) => prev.filter((m) => m.id !== aiMsgId && m.id !== userMsgId));
+        setLoading(false);
+        return;
+      }
       console.error("handleGenerate error:", err);
       setConversation((prev) =>
         prev.map((m) =>
@@ -130,6 +155,24 @@ function Home() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleEdit(msgIndex, newText) {
+    if (!newText || loading) return;
+
+    // Find files that existed just before this user message
+    const msgsBeforeEdit = conversation.slice(0, msgIndex);
+    const prevAiMsg = [...msgsBeforeEdit].reverse().find((m) => m.role === "assistant" && m.files);
+    const prevFiles = prevAiMsg?.files ?? [];
+
+    // Restore UI state to just before the edited message
+    setConversation(msgsBeforeEdit);
+    setFiles(prevFiles);
+    setSelectedFile(prevFiles[0] ?? null);
+    if (prevFiles.length === 0) setAppMeta(null);
+
+    // Pass prevFiles directly so handleGenerate doesn't read stale files state
+    handleGenerate(newText, prevFiles);
   }
 
   function handleNewChat() {
@@ -178,11 +221,12 @@ function Home() {
         </div>
 
         <div className="chat-history-wrapper">
-          <ChatHistory messages={conversation} loading={loading} onRetry={handleGenerate} />
+          <ChatHistory messages={conversation} loading={loading} onRetry={handleGenerate} onEdit={handleEdit} />
         </div>
 
         <PromptPanel
           onGenerate={handleGenerate}
+          onStop={handleStop}
           loading={loading}
           isRefinement={isRefinementMode}
         />

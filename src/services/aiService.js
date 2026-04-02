@@ -1378,15 +1378,18 @@ Wrap all f:content children in a single VBox. Use DynamicPage. Follow all SAP st
 }
 
 // ─── Main export ──────────────────────────────────────────────────────────────
-export async function generateApp(prompt) {
+export async function generateApp(prompt, externalSignal = null) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
+  const timeoutId  = setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
+  const signal     = externalSignal
+    ? AbortSignal.any([controller.signal, externalSignal])
+    : controller.signal;
 
   try {
     const res = await fetch(`${API_BASE}/api/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      signal: controller.signal,
+      signal,
       body: JSON.stringify({
         model: "deepseek/deepseek-chat",
         max_tokens: 8000, // increased from 6000 to reduce truncation
@@ -1456,7 +1459,11 @@ CHECKLIST before outputting:
   } catch (err) {
     clearTimeout(timeoutId);
 
-    // Timeout → use fallback silently (no credits/key errors, just slow AI)
+    // User manually stopped → re-throw so Home.jsx can remove the loading bubble
+    if (err.name === "AbortError" && externalSignal?.aborted) {
+      throw err;
+    }
+    // Internal timeout → use fallback silently (no credits/key errors, just slow AI)
     if (err.name === "AbortError") {
       console.error(
         "generateApp: client timeout after",
@@ -1561,7 +1568,7 @@ function mergeRefinedFiles(lastFiles, refinedFiles) {
 const VIEW_CTX_LIMIT = 6000;
 const CTRL_CTX_LIMIT = 4000;
 
-export async function refineApp(refinementPrompt, lastFiles) {
+export async function refineApp(refinementPrompt, lastFiles, externalSignal = null) {
   const lastView       = lastFiles.find((f) => f.path.endsWith(".view.xml"))?.content ?? "";
   const lastController = lastFiles.find((f) => f.path.endsWith(".controller.js"))?.content ?? "";
 
@@ -1574,6 +1581,9 @@ export async function refineApp(refinementPrompt, lastFiles) {
 
   const abortCtrl = new AbortController();
   const timeoutId = setTimeout(() => abortCtrl.abort(), CLIENT_TIMEOUT_MS);
+  const signal    = externalSignal
+    ? AbortSignal.any([abortCtrl.signal, externalSignal])
+    : abortCtrl.signal;
 
   const buildBody = (userMsg) =>
     JSON.stringify({
@@ -1617,7 +1627,7 @@ IMPORTANT RULES FOR THIS MODIFICATION:
     const res = await fetch(`${API_BASE}/api/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      signal: abortCtrl.signal,
+      signal,
       body: buildBody(fullUserMsg),
     });
 
@@ -1638,6 +1648,9 @@ IMPORTANT RULES FOR THIS MODIFICATION:
       console.warn("refineApp: no file blocks on first attempt — retrying with view-only context");
       const abortCtrl2 = new AbortController();
       const tid2 = setTimeout(() => abortCtrl2.abort(), CLIENT_TIMEOUT_MS);
+      const signal2 = externalSignal
+        ? AbortSignal.any([abortCtrl2.signal, externalSignal])
+        : abortCtrl2.signal;
 
       const retryMsg = `CURRENT VIEW XML:
 ${viewSnippet}
@@ -1651,7 +1664,7 @@ Output only the ---FILE--- blocks for files you changed.`;
       const res2 = await fetch(`${API_BASE}/api/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        signal: abortCtrl2.signal,
+        signal: signal2,
         body: buildBody(retryMsg),
       });
       clearTimeout(tid2);
@@ -1686,6 +1699,7 @@ Output only the ---FILE--- blocks for files you changed.`;
     clearTimeout(timeoutId);
 
     if (err.name === "AbortError") {
+      if (externalSignal?.aborted) throw err; // user stopped — re-throw raw AbortError
       throw new Error("Request timed out. Try a shorter or simpler refinement.");
     }
 
@@ -2225,9 +2239,12 @@ export function splitCAPFiles(files) {
  * Returns all 7 files: UI5 view + controller + manifest, CDS schema + service,
  * seed data JSON, and CAP package.json.
  */
-export async function generateCAPApp(prompt) {
+export async function generateCAPApp(prompt, externalSignal = null) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
+  const timeoutId  = setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
+  const signal     = externalSignal
+    ? AbortSignal.any([controller.signal, externalSignal])
+    : controller.signal;
 
   const userMsg = `Generate a complete SAP CAP full-stack application for: ${prompt}
 
@@ -2246,7 +2263,7 @@ Output exactly 7 ---FILE--- blocks. Start immediately with:
     const res = await fetch(`${API_BASE}/api/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      signal: controller.signal,
+      signal,
       body: JSON.stringify({
         model: "deepseek/deepseek-chat",
         max_tokens: 10000,
@@ -2287,6 +2304,7 @@ Output exactly 7 ---FILE--- blocks. Start immediately with:
   } catch (err) {
     clearTimeout(timeoutId);
     if (err.name === "AbortError") {
+      if (externalSignal?.aborted) throw err; // user stopped
       throw new Error("CAP generation timed out. Try a shorter description.");
     }
     throw err;
@@ -2300,9 +2318,12 @@ Output exactly 7 ---FILE--- blocks. Start immediately with:
  * sap.m.Table with seed data instead — so the user gets a working preview immediately
  * while the downloadable code has the real SmartTable/SmartFilterBar XML.
  */
-export async function generateSmartCAPApp(prompt) {
+export async function generateSmartCAPApp(prompt, externalSignal = null) {
   const controller = new AbortController();
   const timeoutId  = setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
+  const signal     = externalSignal
+    ? AbortSignal.any([controller.signal, externalSignal])
+    : controller.signal;
 
   const userMsg = `Generate a SmartTable + SmartFilterBar SAP UI5 app with a CDS OData V4 backend for: ${prompt}
 
@@ -2321,7 +2342,7 @@ Output exactly 7 ---FILE--- blocks. Start immediately with:
     const res = await fetch(`${API_BASE}/api/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      signal: controller.signal,
+      signal,
       body: JSON.stringify({
         model: "deepseek/deepseek-chat",
         max_tokens: 10000,
@@ -2355,7 +2376,10 @@ Output exactly 7 ---FILE--- blocks. Start immediately with:
     return files;
   } catch (err) {
     clearTimeout(timeoutId);
-    if (err.name === "AbortError") throw new Error("Generation timed out. Try a shorter description.");
+    if (err.name === "AbortError") {
+      if (externalSignal?.aborted) throw err; // user stopped
+      throw new Error("Generation timed out. Try a shorter description.");
+    }
     throw err;
   }
 }

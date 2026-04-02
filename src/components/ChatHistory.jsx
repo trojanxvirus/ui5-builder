@@ -5,16 +5,56 @@
  * AI messages show generated file list, error state, or a typing indicator.
  * Auto-scrolls to the latest message.
  * Error bubbles expose a Retry button that re-sends the last user prompt.
+ * User messages show an Edit pencil on hover — clicking opens an inline editor
+ * that lets the user revise and re-generate from that point in the conversation.
  */
-import { useEffect, useRef } from "react";
-import { FaRobot, FaUser, FaExclamationTriangle, FaCheckCircle, FaWrench, FaRedo } from "react-icons/fa";
+import { useEffect, useRef, useState } from "react";
+import { FaRobot, FaUser, FaExclamationTriangle, FaCheckCircle, FaWrench, FaRedo, FaEdit } from "react-icons/fa";
 
-function ChatHistory({ messages, loading, onRetry }) {
-  const bottomRef = useRef(null);
+function ChatHistory({ messages, loading, onRetry, onEdit }) {
+  const bottomRef             = useRef(null);
+  const editTextareaRef       = useRef(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText]   = useState("");
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+
+  // Focus the textarea whenever we enter edit mode
+  useEffect(() => {
+    if (editingId !== null) {
+      editTextareaRef.current?.focus();
+    }
+  }, [editingId]);
+
+  function startEdit(msg) {
+    setEditingId(msg.id);
+    setEditText(msg.text);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditText("");
+  }
+
+  function saveEdit(msgIndex) {
+    const trimmed = editText.trim();
+    if (!trimmed) return;
+    cancelEdit();
+    onEdit?.(msgIndex, trimmed);
+  }
+
+  function handleEditKeyDown(e, msgIndex) {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      saveEdit(msgIndex);
+    }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      cancelEdit();
+    }
+  }
 
   if (messages.length === 0 && !loading) {
     return (
@@ -36,7 +76,7 @@ function ChatHistory({ messages, loading, onRetry }) {
 
   return (
     <div className="chat-history">
-      {messages.map((msg) => (
+      {messages.map((msg, idx) => (
         <div key={msg.id} className={`chat-message chat-message-${msg.role}`}>
           <div className={`chat-avatar chat-avatar-${msg.role}`}>
             {msg.role === "user" ? <FaUser size={9} /> : <FaRobot size={9} />}
@@ -44,7 +84,46 @@ function ChatHistory({ messages, loading, onRetry }) {
 
           <div className="chat-bubble">
             {msg.role === "user" ? (
-              <div className="chat-text">{msg.text}</div>
+              editingId === msg.id ? (
+                /* ── Inline edit mode ── */
+                <div className="chat-edit-wrapper">
+                  <textarea
+                    ref={editTextareaRef}
+                    className="chat-edit-textarea"
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    onKeyDown={(e) => handleEditKeyDown(e, idx)}
+                    rows={3}
+                  />
+                  <div className="chat-edit-actions">
+                    <span className="chat-edit-hint"><kbd>Ctrl+Enter</kbd> to save · <kbd>Esc</kbd> to cancel</span>
+                    <div className="chat-edit-btns">
+                      <button className="chat-edit-cancel-btn" onClick={cancelEdit}>Cancel</button>
+                      <button
+                        className="chat-edit-save-btn"
+                        onClick={() => saveEdit(idx)}
+                        disabled={!editText.trim()}
+                      >
+                        Save &amp; Regenerate
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* ── Normal user message ── */
+                <div className="chat-user-content">
+                  <div className="chat-text">{msg.text}</div>
+                  {!loading && onEdit && (
+                    <button
+                      className="chat-edit-icon"
+                      onClick={() => startEdit(msg)}
+                      title="Edit this message and regenerate"
+                    >
+                      <FaEdit size={11} />
+                    </button>
+                  )}
+                </div>
+              )
             ) : msg.isError ? (
               <div className="chat-error-text">
                 <FaExclamationTriangle size={11} />

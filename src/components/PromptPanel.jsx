@@ -9,6 +9,7 @@
  */
 import { useState } from "react";
 import { IoSparkles, IoArrowUp } from "react-icons/io5";
+import { FaStop } from "react-icons/fa";
 
 const INITIAL_TEMPLATES = [
   { label: "📊 Sales Dashboard",   prompt: "Create a sales dashboard for managers. Show four KPI cards: Total Revenue, New Orders, Active Customers, and Return Rate. Below that show a table of recent orders with columns Order ID, Customer, Amount, Status, and Date. Include a search bar to find orders and an Export button." },
@@ -43,7 +44,7 @@ Examples:
 • Change the table color for active status to green
 • Add an export to Excel button`;
 
-function PromptPanel({ onGenerate, loading, isRefinement }) {
+function PromptPanel({ onGenerate, onStop, loading, isRefinement }) {
   const [prompt, setPrompt]           = useState("");
   const [showTemplates, setShowTemplates] = useState(true);
 
@@ -112,6 +113,7 @@ function PromptPanel({ onGenerate, loading, isRefinement }) {
           placeholder={isRefinement ? REFINEMENT_PLACEHOLDER : INITIAL_PLACEHOLDER}
           disabled={loading}
           rows={3}
+          style={loading ? { opacity: 0.5 } : undefined}
         />
 
         <div className="chat-input-footer">
@@ -120,16 +122,24 @@ function PromptPanel({ onGenerate, loading, isRefinement }) {
             {" · "}
             <kbd>Ctrl+Enter</kbd> to send
           </span>
-          <button
-            className="send-btn"
-            onClick={handleSubmit}
-            disabled={loading || !prompt.trim()}
-            title="Generate (Ctrl+Enter)"
-          >
-            {loading
-              ? <IoSparkles size={14} className="spinning-icon" />
-              : <IoArrowUp size={14} />}
-          </button>
+          {loading ? (
+            <button
+              className="stop-btn"
+              onClick={onStop}
+              title="Stop generating"
+            >
+              <FaStop size={11} /> Stop
+            </button>
+          ) : (
+            <button
+              className="send-btn"
+              onClick={handleSubmit}
+              disabled={!prompt.trim()}
+              title="Generate (Ctrl+Enter)"
+            >
+              <IoArrowUp size={14} />
+            </button>
+          )}
         </div>
       </div>
     </div>

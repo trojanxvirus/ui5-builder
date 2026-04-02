@@ -638,6 +638,72 @@
 .spinning-icon { animation: spin 2s linear infinite; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
+/* ── Stop button ────────────────────────────────────────────────── */
+.stop-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(255,107,107,0.4);
+  background: rgba(255,107,107,0.12); color: #ff6b6b;
+  font-size: 11px; font-weight: 600; cursor: pointer;
+  transition: all 0.15s; white-space: nowrap; flex-shrink: 0;
+}
+.stop-btn:hover { background: rgba(255,107,107,0.22); border-color: rgba(255,107,107,0.65); }
+
+/* ── Chat message edit ───────────────────────────────────────────── */
+.chat-user-content {
+  display: flex; align-items: flex-start; gap: 6px; width: 100%;
+}
+.chat-user-content .chat-text { flex: 1; }
+
+.chat-edit-icon {
+  flex-shrink: 0; opacity: 0; pointer-events: none;
+  padding: 3px 5px; border-radius: 5px; border: 1px solid transparent;
+  background: transparent; color: var(--text-faint); cursor: pointer;
+  transition: all 0.15s; margin-top: 1px;
+}
+.chat-message:hover .chat-edit-icon { opacity: 1; pointer-events: auto; }
+.chat-edit-icon:hover { background: var(--surface-raised); border-color: var(--border); color: var(--sap-blue); }
+
+.chat-edit-wrapper { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+
+.chat-edit-textarea {
+  width: 100%; resize: vertical; min-height: 64px;
+  padding: 8px 10px; border-radius: 8px;
+  border: 1px solid var(--sap-blue); outline: none;
+  background: var(--surface-raised); color: var(--text-primary);
+  font-size: 12px; line-height: 1.5; font-family: inherit;
+  box-shadow: 0 0 0 2px rgba(90,150,227,0.15);
+  box-sizing: border-box;
+}
+
+.chat-edit-actions {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; flex-wrap: wrap;
+}
+.chat-edit-hint { font-size: 10px; color: var(--text-faint); }
+.chat-edit-hint kbd {
+  font-size: 9px; padding: 1px 4px; border-radius: 3px;
+  border: 1px solid var(--border); background: var(--surface-raised);
+  color: var(--text-secondary);
+}
+.chat-edit-btns { display: flex; gap: 6px; }
+
+.chat-edit-cancel-btn {
+  padding: 4px 10px; border-radius: 6px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--text-secondary); font-size: 11px; cursor: pointer;
+  transition: all 0.15s;
+}
+.chat-edit-cancel-btn:hover { background: var(--surface-raised); }
+
+.chat-edit-save-btn {
+  padding: 4px 12px; border-radius: 6px;
+  border: 1px solid rgba(90,150,227,0.5); background: var(--sap-blue);
+  color: #fff; font-size: 11px; font-weight: 600; cursor: pointer;
+  transition: all 0.15s;
+}
+.chat-edit-save-btn:hover:not(:disabled) { background: var(--sap-blue-hover, #3a78c9); }
+.chat-edit-save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
 /* ── Scrollbars ─────────────────────────────────────────────────── */
 .sidebar ::-webkit-scrollbar-track { background: transparent; }
 .sidebar ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
