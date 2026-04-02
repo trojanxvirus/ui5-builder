@@ -9,7 +9,7 @@
  */
 import { useState } from "react";
 import { IoSparkles, IoArrowUp } from "react-icons/io5";
-import { FaStop } from "react-icons/fa";
+import { FaStop, FaPaperclip } from "react-icons/fa";
 
 const INITIAL_TEMPLATES = [
   { label: "📊 Sales Dashboard",   prompt: "Create a sales dashboard for managers. Show four KPI cards: Total Revenue, New Orders, Active Customers, and Return Rate. Below that show a table of recent orders with columns Order ID, Customer, Amount, Status, and Date. Include a search bar to find orders and an Export button." },
@@ -117,11 +117,22 @@ function PromptPanel({ onGenerate, onStop, loading, isRefinement }) {
         />
 
         <div className="chat-input-footer">
-          <span className="chat-input-hint">
-            {isRefinement ? "Refining existing app" : "New app generation"}
-            {" · "}
-            <kbd>Ctrl+Enter</kbd> to send
-          </span>
+          <div className="chat-input-left">
+            <button
+              className="attach-btn"
+              disabled
+              title="Attach files — coming soon"
+            >
+              <FaPaperclip size={12} />
+              <span className="attach-label">Attach</span>
+              <span className="attach-soon-badge">Soon</span>
+            </button>
+            <span className="chat-input-hint">
+              {isRefinement ? "Refining existing app" : "New app generation"}
+              {" · "}
+              <kbd>Ctrl+Enter</kbd> to send
+            </span>
+          </div>
           {loading ? (
             <button
               className="stop-btn"

@@ -638,6 +638,27 @@
 .spinning-icon { animation: spin 2s linear infinite; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
+/* ── Input footer layout ─────────────────────────────────────────── */
+.chat-input-left {
+  display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;
+}
+
+/* ── Attach (coming soon) button ─────────────────────────────────── */
+.attach-btn {
+  display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+  padding: 3px 8px; border-radius: 6px;
+  border: 1px dashed var(--border); background: transparent;
+  color: var(--text-faint); font-size: 11px; cursor: not-allowed;
+  opacity: 0.55; transition: opacity 0.15s;
+}
+.attach-label { font-size: 11px; }
+.attach-soon-badge {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.04em;
+  padding: 1px 5px; border-radius: 4px;
+  background: rgba(90,150,227,0.15); color: var(--sap-blue);
+  border: 1px solid rgba(90,150,227,0.25);
+}
+
 /* ── Stop button ────────────────────────────────────────────────── */
 .stop-btn {
   display: flex; align-items: center; gap: 5px;
