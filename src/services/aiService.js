@@ -970,7 +970,7 @@ CONTROLLER — combined filter helper:
 ❌ NEVER use key="active" when model data has status:"Active" — case must match exactly
 ❌ NEVER omit the "All" / key="" item — user cannot clear the filter otherwise
 
-Return ONLY the 6 ---FILE--- blocks. No other text.\`;
+Return ONLY the 6 ---FILE--- blocks. No other text.`;
 
 // ─── Parse file blocks ────────────────────────────────────────────────────────
 function parseFileBlocks(text) {
@@ -1526,7 +1526,7 @@ in the JSONModel. Use _applyFilters() to combine search + status — never overw
 ❌ key="active" when model has status:"Active" → EQ filter returns zero results.
 
 RULE: Only change what was explicitly requested. Preserve all other structure, bindings, and logic.
-Output ONLY the files that changed.\`;
+Output ONLY the files that changed.`;
 
 // ─── Merge helper ─────────────────────────────────────────────────────────────
 // Combines the AI's partial output (only changed files) with the original full
