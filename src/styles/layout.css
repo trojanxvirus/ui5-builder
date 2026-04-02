@@ -438,107 +438,125 @@
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  background: var(--sidebar-bg);
 }
 
-/* Templates / Suggestions section */
-.templates {
-  padding: 8px 12px 0;
-}
-.templates-toggle {
+/* Horizontal scrollable chip row */
+.prompt-chips-row {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-faint);
-  cursor: pointer;
-  padding: 4px 0;
-  user-select: none;
-  transition: color 0.15s;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
 }
-.templates-toggle:hover { color: var(--text-secondary); }
+.prompt-chips-row::-webkit-scrollbar { display: none; }
 
-.template-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 5px;
-  padding: 6px 0 4px;
-}
-.template-buttons button {
-  padding: 6px 8px;
-  border-radius: 4px;
-  background: var(--surface);
+.prompt-chip {
+  flex-shrink: 0;
+  padding: 5px 11px;
+  border-radius: 20px;
   border: 1px solid var(--border);
+  background: var(--surface);
   color: var(--text-secondary);
   font-size: 11px;
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.15s;
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   font-family: 'Noto Sans', -apple-system, Arial, sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
 }
-.template-buttons button:hover {
+.prompt-chip:hover {
   border-color: var(--sap-blue);
   background: var(--sap-blue-light);
   color: var(--sap-blue);
 }
 
-/* Chat input area */
-.chat-input-area {
-  padding: 8px 12px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.chat-input-area textarea {
-  width: 100%;
+/* Input card */
+.prompt-input-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 12px;
-  color: var(--text-primary);
-  font-size: 12px;
-  line-height: 1.5;
-  resize: none;
-  min-height: 72px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   transition: border-color 0.15s, box-shadow 0.15s;
-  font-family: 'Noto Sans', -apple-system, Arial, sans-serif;
+  overflow: hidden;
 }
-.chat-input-area textarea:focus {
-  outline: none;
+.prompt-input-card:focus-within {
   border-color: var(--sap-blue);
   box-shadow: 0 0 0 2px var(--sap-blue-glow);
 }
-.chat-input-area textarea::placeholder { color: var(--text-faint); font-size: 11px; }
 
-.chat-input-footer {
+.prompt-textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 11px 13px 6px;
+  color: var(--text-primary);
+  font-size: 12.5px;
+  line-height: 1.55;
+  resize: none;
+  min-height: 44px;
+  max-height: 140px;
+  overflow-y: auto;
+  font-family: 'Noto Sans', -apple-system, Arial, sans-serif;
+  box-sizing: border-box;
+}
+.prompt-textarea::placeholder { color: var(--text-faint); font-size: 12px; }
+.prompt-textarea:disabled { opacity: 0.5; }
+
+/* Toolbar inside the card */
+.prompt-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 5px 8px 7px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-alt);
 }
-.chat-input-hint {
+.prompt-toolbar-left  { display: flex; align-items: center; gap: 8px; }
+.prompt-toolbar-right { display: flex; align-items: center; gap: 7px; }
+
+/* Mode badge */
+.prompt-mode-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  letter-spacing: 0.02em;
+}
+.mode-new {
+  background: rgba(90,150,227,0.12);
+  color: var(--sap-blue);
+  border: 1px solid rgba(90,150,227,0.25);
+}
+.mode-refine {
+  background: rgba(245,166,35,0.12);
+  color: #f5a623;
+  border: 1px solid rgba(245,166,35,0.25);
+}
+
+/* Shortcut hint */
+.prompt-hint {
   font-size: 10px;
   color: var(--text-faint);
 }
-.chat-input-hint kbd {
-  padding: 1px 4px;
-  border-radius: 3px;
+.prompt-hint kbd {
+  padding: 1px 5px;
+  border-radius: 4px;
   background: var(--surface-raised);
   border: 1px solid var(--border);
-  font-size: 9px;
-  color: var(--text-secondary);
+  font-size: 10px;
+  color: var(--text-faint);
   font-family: monospace;
 }
 
 /* Send button */
 .send-btn {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: none;
   background: var(--sap-blue);
