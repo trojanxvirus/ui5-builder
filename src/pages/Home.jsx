@@ -16,7 +16,8 @@ import PreviewFrame from "../components/PreviewFrame";
 import CapStatusBadge from "../components/CapStatusBadge";
 import { generateApp, refineApp, generateCAPApp, generateSmartCAPApp, isCAPProject } from "../services/aiService";
 import { deployCAP, stopCAP } from "../services/capService";
-import { FaTerminal, FaPlay, FaPlus } from "react-icons/fa";
+import { FaTerminal, FaPlay, FaPlus, FaSitemap } from "react-icons/fa";
+import FlowView from "../components/FlowView";
 import "../styles/layout.css";
 
 let _msgCounter = 0;
@@ -35,6 +36,7 @@ function Home() {
   const [tab, setTab]                     = useState("code");
   const [loading, setLoading]             = useState(false);
   const [appMeta, setAppMeta]             = useState(null);
+  const [diagram, setDiagram]             = useState("");
 
   // Abort controller ref — lets the Stop button cancel in-flight AI requests
   const abortControllerRef = useRef(null);
@@ -91,21 +93,26 @@ function Home() {
     setTab("code");
 
     try {
-      let generated;
+      let result;
       const shouldGenerateCAP   = !isRefinement && CAP_KEYWORDS.test(prompt);
       const shouldGenerateSmart = !isRefinement && !shouldGenerateCAP && SMART_KEYWORDS.test(prompt);
 
       if (shouldGenerateCAP) {
         // Floor Plan 7 — full-stack CAP generation with sap.m.Table
-        generated = await generateCAPApp(prompt, abortCtrl.signal);
+        result = await generateCAPApp(prompt, abortCtrl.signal);
       } else if (shouldGenerateSmart) {
         // SmartTable + SmartFilterBar with CDS seed data backend
-        generated = await generateSmartCAPApp(prompt, abortCtrl.signal);
+        result = await generateSmartCAPApp(prompt, abortCtrl.signal);
       } else if (isRefinement) {
-        generated = await refineApp(prompt, effectiveFiles, abortCtrl.signal);
+        result = await refineApp(prompt, effectiveFiles, abortCtrl.signal);
       } else {
-        generated = await generateApp(prompt, abortCtrl.signal);
+        result = await generateApp(prompt, abortCtrl.signal);
       }
+
+      const { files: generated, diagram: newDiagram } = result;
+      // Fresh generation always updates diagram; refinement only updates if AI produced one
+      if (!isRefinement) setDiagram(newDiagram ?? "");
+      else if (newDiagram) setDiagram(newDiagram);
 
       const capProject = isCAPProject(generated);
       setIsCapProject(capProject);
@@ -181,6 +188,7 @@ function Home() {
     setFiles([]);
     setSelectedFile(null);
     setAppMeta(null);
+    setDiagram("");
     setTab("code");
     setIsCapProject(false);
     setCapStatus("idle");
@@ -248,6 +256,9 @@ function Home() {
             <button className={tab === "preview" ? "active" : ""} onClick={() => setTab("preview")}>
               <FaPlay size={10} /> Live Preview
             </button>
+            <button className={tab === "flow" ? "active" : ""} onClick={() => setTab("flow")}>
+              <FaSitemap size={10} /> App Flow
+            </button>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -304,6 +315,11 @@ function Home() {
                 capStatus={capStatus}
                 isCapProject={isCapProject}
               />
+            </div>
+          )}
+          {tab === "flow" && (
+            <div className="flow-view" style={{ animation: "fadeIn 0.2s ease" }}>
+              <FlowView diagram={diagram} />
             </div>
           )}
         </div>

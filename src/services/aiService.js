@@ -977,7 +977,14 @@ KPI TILE LAYOUT RULE:
 ✅ Each GenericTile gets: class="sapUiSmallMarginEnd sapUiSmallMarginBottom"
    Tiles then flow left-to-right naturally and wrap on smaller screens with consistent spacing.
 
-Return ONLY the 6 ---FILE--- blocks. No other text.`;
+Return the 6 ---FILE--- blocks, then ONE \`\`\`mermaid\`\`\` block. No other text.
+
+DIAGRAM (append after the last ---ENDFILE---):
+\`\`\`mermaid
+flowchart TD
+  ... nodes ...
+\`\`\`
+Diagram rules — show: every view node → its bound controller → key UI elements inside it (tables / forms / KPI tiles / charts / filters) → navigation route arrows between views. Max 15 nodes. Short labels only (no file path prefixes).`;
 
 // ─── Parse file blocks ────────────────────────────────────────────────────────
 function parseFileBlocks(text) {
@@ -1015,6 +1022,12 @@ function parseFileBlocks(text) {
   }
 
   return files;
+}
+
+// ─── Mermaid diagram extractor ───────────────────────────────────────────────
+function parseMermaidBlock(text) {
+  const match = text.match(/```mermaid\n([\s\S]*?)```/);
+  return match ? match[1].trim() : "";
 }
 
 // ─── Post-process files ───────────────────────────────────────────────────────
@@ -1358,7 +1371,7 @@ Wrap all f:content children in a single VBox. Use DynamicPage. Follow all SAP st
         ],
       }),
     });
-    if (!res.ok) return generateFallbackApp(prompt);
+    if (!res.ok) return { files: generateFallbackApp(prompt), diagram: "" };
     const data = await res.json();
     const rawText = data.choices?.[0]?.message?.content ?? "";
     const files = parseFileBlocks(rawText);
@@ -1366,14 +1379,17 @@ Wrap all f:content children in a single VBox. Use DynamicPage. Follow all SAP st
       console.warn(
         "retryWithHigherTokens: still no file blocks — using fallback",
       );
-      return generateFallbackApp(prompt);
+      return { files: generateFallbackApp(prompt), diagram: "" };
     }
     const processed = processFiles(files);
     const hasView = processed.some((f) => f.path.endsWith(".view.xml"));
-    return hasView ? processed : generateFallbackApp(prompt);
+    const diagram = parseMermaidBlock(rawText);
+    return hasView
+      ? { files: processed, diagram }
+      : { files: generateFallbackApp(prompt), diagram: "" };
   } catch (err) {
     console.error("retryWithHigherTokens error:", err);
-    return generateFallbackApp(prompt);
+    return { files: generateFallbackApp(prompt), diagram: "" };
   }
 }
 
@@ -1449,13 +1465,14 @@ CHECKLIST before outputting:
 
     const processed = processFiles(files);
     const hasView = processed.some((f) => f.path.endsWith(".view.xml"));
+    const diagram = parseMermaidBlock(rawText);
 
     if (!hasView) {
       console.warn("generateApp: No view file, using fallback");
-      return generateFallbackApp(prompt);
+      return { files: generateFallbackApp(prompt), diagram: "" };
     }
 
-    return processed;
+    return { files: processed, diagram };
   } catch (err) {
     clearTimeout(timeoutId);
 
@@ -1470,7 +1487,7 @@ CHECKLIST before outputting:
         CLIENT_TIMEOUT_MS / 1000,
         "s",
       );
-      return generateFallbackApp(prompt);
+      return { files: generateFallbackApp(prompt), diagram: "" };
     }
 
     // API errors (402, 401, 429 etc.) → throw so Home.jsx can show the message
@@ -1490,12 +1507,12 @@ CHECKLIST before outputting:
 
     // Unexpected errors (parse failures, network blips) → fallback
     console.error("generateApp error:", err);
-    return generateFallbackApp(prompt);
+    return { files: generateFallbackApp(prompt), diagram: "" };
   }
 }
 
 export const generateXML = async (prompt) => {
-  const files = await generateApp(prompt);
+  const { files } = await generateApp(prompt);
   const viewFile = files.find((f) => f.path.endsWith(".view.xml"));
   return viewFile?.content ?? "";
 };
@@ -1694,7 +1711,7 @@ Output only the ---FILE--- blocks for files you changed.`;
     //    AI output. When the AI only returns the controller (no view), the partial
     //    set has no view → crossFixVizCharts can't detect the donut vizType →
     //    assigns wrong dimUid "categoryAxis" instead of "color" → [50017].
-    return crossFixVizCharts(merged);
+    return { files: crossFixVizCharts(merged), diagram: "" };
   } catch (err) {
     clearTimeout(timeoutId);
 
@@ -2257,7 +2274,9 @@ Requirements:
 - package.json must configure SQLite in-memory DB
 
 Output exactly 7 ---FILE--- blocks. Start immediately with:
----FILE:webapp/view/Main.view.xml:xml---`;
+---FILE:webapp/view/Main.view.xml:xml---
+
+After the last ---ENDFILE---, append ONE \`\`\`mermaid\`\`\` flowchart TD diagram showing all views, controllers, key UI elements, OData entities, and navigation routes. Max 15 nodes.`;
 
   try {
     const res = await fetch(`${API_BASE}/api/generate`, {
@@ -2299,8 +2318,9 @@ Output exactly 7 ---FILE--- blocks. Start immediately with:
     }
 
     console.log(`generateCAPApp: got ${files.length} files`);
+    const diagram = parseMermaidBlock(rawText);
     // Safety net: replace SmartTable/SmartFilterBar if the AI still generated them
-    return fixCAPSmartTable(files);
+    return { files: fixCAPSmartTable(files), diagram };
   } catch (err) {
     clearTimeout(timeoutId);
     if (err.name === "AbortError") {
@@ -2372,8 +2392,9 @@ Output exactly 7 ---FILE--- blocks. Start immediately with:
     if (!hasCds || !hasView) throw new Error("AI returned incomplete project. Try again.");
 
     console.log(`generateSmartCAPApp: got ${files.length} files`);
+    const diagram = parseMermaidBlock(rawText);
     // Do NOT run fixCAPSmartTable — we want to preserve the SmartTable XML
-    return files;
+    return { files, diagram };
   } catch (err) {
     clearTimeout(timeoutId);
     if (err.name === "AbortError") {
