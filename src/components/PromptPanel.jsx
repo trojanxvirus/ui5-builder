@@ -10,15 +10,6 @@ import { useState, useRef, useEffect } from "react";
 import { IoArrowUp } from "react-icons/io5";
 import { FaStop } from "react-icons/fa";
 
-const INITIAL_TEMPLATES = [
-  { label: "📊 Sales Dashboard",  prompt: "Create a sales dashboard for managers. Show four KPI cards: Total Revenue, New Orders, Active Customers, and Return Rate. Below that show a table of recent orders with columns Order ID, Customer, Amount, Status, and Date. Include a search bar to find orders and an Export button." },
-  { label: "📝 Employee Form",    prompt: "Create a form where HR can register a new employee. Include fields for First Name, Last Name, Email, Phone, Department, Contract Type, and Start Date. Add Submit, Cancel, and Reset buttons." },
-  { label: "📋 Customer List",    prompt: "Create a page that shows a list of customers. Display their Name, Company, Email, Phone, and Status. Add a search bar to find customers and a Create button to add a new customer." },
-  { label: "🗂️ Order Details",   prompt: "Create a page to view details of an order. Show the customer name, order amount, and status at the top. Include tabs for Overview, Items in the order, and Notes." },
-  { label: "🏪 Product Catalog",  prompt: "Create a product catalog page showing a table of products. Include Product ID, Name, Category, Price, Stock Level, and Status. Add a search bar and a button to create a new product." },
-  { label: "📈 Analytics Charts", prompt: "Create an analytics overview page for business managers. Show KPI cards for Total Sales, Active Users, and Conversion Rate. Below that add a bar chart showing monthly revenue for the last 6 months and a line chart for weekly active users." },
-];
-
 const REFINEMENT_SUGGESTIONS = [
   "Add a date range filter",
   "Add export to Excel button",
@@ -55,25 +46,15 @@ function PromptPanel({ onGenerate, onStop, loading, isRefinement }) {
     }
   }
 
-  const chips = isRefinement ? REFINEMENT_SUGGESTIONS : INITIAL_TEMPLATES.map((t) => t.label);
-  const chipPrompts = isRefinement
-    ? REFINEMENT_SUGGESTIONS
-    : INITIAL_TEMPLATES.map((t) => t.prompt);
-
   return (
     <div className="prompt-panel">
 
-      {/* ── Suggestion chips — horizontal scroll row ── */}
-      {!loading && (
+      {/* ── Refinement suggestion chips ── */}
+      {!loading && isRefinement && (
         <div className="prompt-chips-row">
-          {chips.map((chip, i) => (
-            <button
-              key={chip}
-              className="prompt-chip"
-              onClick={() => setPrompt(chipPrompts[i])}
-              title={chipPrompts[i]}
-            >
-              {chip}
+          {REFINEMENT_SUGGESTIONS.map((s) => (
+            <button key={s} className="prompt-chip" onClick={() => setPrompt(s)} title={s}>
+              {s}
             </button>
           ))}
         </div>

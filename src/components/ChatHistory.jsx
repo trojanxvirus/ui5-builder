@@ -11,7 +11,14 @@
 import { useEffect, useRef, useState } from "react";
 import { FaRobot, FaUser, FaExclamationTriangle, FaCheckCircle, FaWrench, FaRedo, FaEdit } from "react-icons/fa";
 
-function ChatHistory({ messages, loading, onRetry, onEdit }) {
+const STARTER_TEMPLATES = [
+  { label: "📊 Sales Dashboard",  prompt: "Create a sales dashboard for managers. Show four KPI cards: Total Revenue, New Orders, Active Customers, and Return Rate. Below that show a table of recent orders with columns Order ID, Customer, Amount, Status, and Date. Include a search bar to find orders and an Export button." },
+  { label: "📋 Customer List",    prompt: "Create a page that shows a list of customers. Display their Name, Company, Email, Phone, and Status. Add a search bar to find customers and a Create button to add a new customer." },
+  { label: "📈 Analytics Charts", prompt: "Create an analytics overview page for business managers. Show KPI cards for Total Sales, Active Users, and Conversion Rate. Below that add a bar chart showing monthly revenue for the last 6 months and a line chart for weekly active users." },
+  { label: "📝 Employee Form",    prompt: "Create a form where HR can register a new employee. Include fields for First Name, Last Name, Email, Phone, Department, Contract Type, and Start Date. Add Submit, Cancel, and Reset buttons." },
+];
+
+function ChatHistory({ messages, loading, onRetry, onEdit, onTemplateSelect }) {
   const bottomRef             = useRef(null);
   const editTextareaRef       = useRef(null);
   const [editingId, setEditingId] = useState(null);
@@ -62,13 +69,19 @@ function ChatHistory({ messages, loading, onRetry, onEdit }) {
         <div className="chat-empty-icon">🤖</div>
         <div className="chat-empty-title">SAP UI5 Builder</div>
         <div className="chat-empty-subtitle">
-          Describe any SAP Fiori app and I'll generate the complete code — or ask me to refine it afterwards.
+          Describe any SAP Fiori app and I'll generate the complete code.
         </div>
         <div className="chat-empty-hints">
-          <span className="chat-hint-chip">📊 Sales dashboard</span>
-          <span className="chat-hint-chip">📋 Customer list</span>
-          <span className="chat-hint-chip">📈 Analytics charts</span>
-          <span className="chat-hint-chip">📝 Employee form</span>
+          {STARTER_TEMPLATES.map((t) => (
+            <button
+              key={t.label}
+              className="chat-hint-chip"
+              onClick={() => onTemplateSelect?.(t.prompt)}
+              title={t.prompt}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
       </div>
     );

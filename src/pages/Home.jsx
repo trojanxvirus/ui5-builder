@@ -221,7 +221,7 @@ function Home() {
         </div>
 
         <div className="chat-history-wrapper">
-          <ChatHistory messages={conversation} loading={loading} onRetry={handleGenerate} onEdit={handleEdit} />
+          <ChatHistory messages={conversation} loading={loading} onRetry={handleGenerate} onEdit={handleEdit} onTemplateSelect={handleGenerate} />
         </div>
 
         <PromptPanel
