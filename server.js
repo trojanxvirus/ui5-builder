@@ -119,7 +119,8 @@ app.post("/api/generate", async (req, res) => {
   };
 
   try {
-    const upstream = await callOpenRouter(AbortSignal.timeout(90_000));
+    // 3 min — dashboard/chart templates + mermaid diagram often exceed 90s on OpenRouter
+    const upstream = await callOpenRouter(AbortSignal.timeout(180_000));
     if (!upstream.ok) {
       const text = await upstream.text();
       console.error(`OpenRouter ${upstream.status}:`, text);
@@ -143,7 +144,7 @@ app.post("/api/generate", async (req, res) => {
     if (isConnReset) {
       console.warn("ECONNRESET — retrying once…");
       try {
-        const retry = await callOpenRouter(AbortSignal.timeout(90_000));
+        const retry = await callOpenRouter(AbortSignal.timeout(180_000));
         if (!retry.ok) return res.status(retry.status).json({ error: `OpenRouter returned ${retry.status} on retry.` });
         return res.json(await retry.json());
       } catch (retryErr) {

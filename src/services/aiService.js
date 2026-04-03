@@ -9,7 +9,7 @@
  * v4.3 adds: GenericCard + hallucinated control fixes in FORBIDDEN list
  * v4.2 changes:
  *   - Calls /api/generate proxy instead of OpenRouter directly (no key in browser)
- *   - AbortController with 120s client-side timeout (prevents hung spinner)
+ *   - AbortController with client-side timeout aligned above proxy upstream limit
  *   - VITE_OPENROUTER_KEY removed — use VITE_API_BASE=http://localhost:3001 instead
  */
 import { sanitizeXML } from "../utils/xmlSanitizer";
@@ -20,8 +20,8 @@ const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3001";
 const APP_ID = "com.ui5builder.app";
 const CTRL_FQN = `${APP_ID}.controller.Main`;
 
-// 120s client guard — proxy has its own 90s upstream timeout
-const CLIENT_TIMEOUT_MS = 120_000;
+// Must be slightly above server.js OpenRouter timeout (180s) so the client waits for 504, not AbortError
+const CLIENT_TIMEOUT_MS = 195_000;
 
 const SYSTEM_PROMPT = `You are a senior SAP UI5 / Fiori developer. Generate a COMPLETE, FULLY INTERACTIVE, 100% SAP-STANDARD UI5 application following the latest SAP Fiori design guidelines.
 
