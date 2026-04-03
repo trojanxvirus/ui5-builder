@@ -11,11 +11,38 @@
 import { useEffect, useRef, useState } from "react";
 import { FaRobot, FaUser, FaExclamationTriangle, FaCheckCircle, FaWrench, FaRedo, FaEdit } from "react-icons/fa";
 
+// Plain-language prompts for business users — short enough to generate reliably, clear for the AI
 const STARTER_TEMPLATES = [
-  { label: "📊 Sales Dashboard",  prompt: "Create a sales dashboard for managers. Show four KPI cards: Total Revenue, New Orders, Active Customers, and Return Rate. Below that show a table of recent orders with columns Order ID, Customer, Amount, Status, and Date. Include a search bar to find orders and an Export button." },
-  { label: "📋 Customer List",    prompt: "Create a page that shows a list of customers. Display their Name, Company, Email, Phone, and Status. Add a search bar to find customers and a Create button to add a new customer." },
-  { label: "📈 Analytics Charts", prompt: "Create an analytics overview page for business managers. Show KPI cards for Total Sales, Active Users, and Conversion Rate. Below that add a bar chart showing monthly revenue for the last 6 months and a line chart for weekly active users." },
-  { label: "📝 Employee Form",    prompt: "Create a form where HR can register a new employee. Include fields for First Name, Last Name, Email, Phone, Department, Contract Type, and Start Date. Add Submit, Cancel, and Reset buttons." },
+  {
+    label: "Our customers",
+    prompt:
+      "A screen that lists our customers: name, company, phone, and if they are active. Add a search box to find someone and a button to add a new customer.",
+  },
+  {
+    label: "New hire form",
+    prompt:
+      "A simple form for HR to register a new hire: first and last name, work email, phone, department, and start date. Save and cancel buttons.",
+  },
+  {
+    label: "Business snapshot",
+    prompt:
+      "A manager page with three big numbers at the top: sales this month, how many open orders, and number of customers. Under that, a small table of recent orders with order number, customer, amount, and status.",
+  },
+  {
+    label: "Sales trends",
+    prompt:
+      "A page for leadership with three headline figures: revenue, profit margin, and active deals. Below, one chart for sales by month and one simple trend line.",
+  },
+  {
+    label: "Order details",
+    prompt:
+      "A screen to look at one order: show buyer name, order total, status, and a list of line items with product and quantity.",
+  },
+  {
+    label: "Product catalog",
+    prompt:
+      "A product list with item code, name, price, stock level, and category. Add a search field to find products quickly.",
+  },
 ];
 
 function ChatHistory({ messages, loading, onRetry, onEdit, onTemplateSelect }) {
